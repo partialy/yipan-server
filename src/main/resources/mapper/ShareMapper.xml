@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yixi.yipan.mapper.ShareMapper">
+
+    <!-- 基础列映射 -->
+    <resultMap type="com.yixi.yipan.entity.Share" id="ShareMap">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="fileId" column="file_id"/>
+        <result property="shareCode" column="share_code"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="downloadCount" column="download_count"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, file_id, share_code, expire_time, download_count, created_at, status
+    </sql>
+
+    <!-- 创建分享 -->
+    <insert id="insert" parameterType="com.yixi.yipan.entity.Share">
+        insert into share
+        (id, user_id, file_id, share_code, expire_time, download_count, status)
+        values
+        (#{id}, #{userId}, #{fileId}, #{shareCode}, #{expireTime}, #{downloadCount}, #{status})
+    </insert>
+
+    <!-- 根据ID查询分享 -->
+    <select id="queryById" resultMap="ShareMap">
+        select 
+        <include refid="Base_Column_List"/>
+        from share
+        where id = #{id} and status = 1 and expire_time > CURRENT_TIMESTAMP
+    </select>
+
+    <!-- 根据分享码查询分享 -->
+    <select id="queryByShareCode" resultMap="ShareMap">
+        select 
+        <include refid="Base_Column_List"/>
+        from share
+        where share_code = #{shareCode} and status = 1 and expire_time > CURRENT_TIMESTAMP
+    </select>
+
+    <!-- 查询用户的分享列表 -->
+    <select id="queryByUserId" resultMap="ShareMap">
+        select 
+        <include refid="Base_Column_List"/>
+        from share
+        where user_id = #{userId} and status = 1
+        order by created_at desc
+    </select>
+
+    <!-- 更新下载次数 -->
+    <update id="incrementDownloadCount">
+        update share
+        set download_count = download_count + 1
+        where id = #{id} and status = 1
+    </update>
+
+    <!-- 取消分享 -->
+    <update id="cancelShare">
+        update share
+        set status = 0
+        where id = #{id} and user_id = #{userId}
+    </update>
+
+    <!-- 删除过期的分享 -->
+    <update id="deleteExpiredShares">
+        update share
+        set status = 0
+        where expire_time &lt;= CURRENT_TIMESTAMP and status = 1
+    </update>
+
+    <!-- 检查分享是否有效 -->
+    <select id="checkShareValid" resultType="java.lang.Integer">
+        select count(1)
+        from share
+        where id = #{id} 
+        and status = 1 
+        and expire_time &gt; CURRENT_TIMESTAMP
+    </select>
+
+</mapper>

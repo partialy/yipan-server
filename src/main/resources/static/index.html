@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Hello World</h1>
+    <input type="file" id="fileInput">
+    <input type="text" id="parentId" value="4ef1f738-8d77-46f2-a32c-592d74b6c48b">
+    <div>
+        用户ID: <input type="text" id="userId" value="088f8ad5-10cd-431e-a963-32f63f3e60df">
+    </div>
+    <button id="uploadButton">上传</button>
+
+    <!-- 上传进度条 -->
+    <div class="progress">
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 50%;background-color: #007bff;"></div>
+    </div>
+
+    <!-- 上传 -->
+    <input type="file" id="filemultipleInput">
+    <input type="text" id="parentId1" value="root">
+    <button id="multipleuploadButton" onclick="uploadFile()">分片上传</button>
+
+    <!-- 下载 -->
+    <input type="text" id="downloadId" value="uploads/2024/11/1/OIP-C_20241101094428.jfif">
+    <button id="downloadButton">下载</button>
+</body>
+<script src="jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
+<script>
+    localStorage.setItem('userId', '088f8ad5-10cd-431e-a963-32f63f3e60df');
+    document.getElementById('uploadButton').addEventListener('click', function() {
+        const formData = new FormData();
+        const parentId = document.getElementById('parentId').value;
+        console.log(parentId);
+        if (!parentId) {
+            alert('请输入父级ID');
+            return;
+        }
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        formData.append('file', file);
+        formData.append('parentId', parentId);
+        fetch(`http://localhost:8080/api/v1/files/upload`, {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json()).then(data => {
+            console.log(data);
+        });
+    });
+
+    // 计算文件的MD5值
+    function calculateFileMD5(file) {
+        return new Promise((resolve, reject) => {
+            const spark = new SparkMD5.ArrayBuffer();
+            const fileReader = new FileReader();
+            let currentChunk = 0;
+            const chunkSize = 8192;  // 使用与后端相同的缓冲区大小 8192 bytes
+            const chunks = Math.ceil(file.size / chunkSize);
+
+            fileReader.onload = function(e) {
+                spark.append(e.target.result);
+                currentChunk++;
+
+                if (currentChunk < chunks) {
+                    loadNext();
+                } else {
+                    const md5 = spark.end().toLowerCase(); // 确保输出小写十六进制
+                    resolve(md5);
+                }
+            };
+
+            fileReader.onerror = function(e) {
+                reject(e);
+            };
+
+            function loadNext() {
+                const start = currentChunk * chunkSize;
+                const end = start + chunkSize >= file.size ? file.size : start + chunkSize;
+                const chunk = file.slice(start, end);
+                fileReader.readAsArrayBuffer(chunk);
+            }
+
+            loadNext();
+        });
+    }
+
+    // 等待文件MD5值计算完成
+    async function handleUpload(file) {
+        try {
+            // 显示加载提示
+            console.log('正在计算文件MD5...');
+            // 先计算MD5
+            const md5 = await calculateFileMD5(file, (progress) => {
+                console.log(`MD5计算进度: ${progress.toFixed(2)}%`);
+            });
+            // 存储到localStorage
+            localStorage.setItem('fileMd5', md5);
+            // 继续处理上传逻辑...
+        } catch (error) {
+            console.error('计算MD5失败:', error);
+        }
+    }
+
+     async function uploadFile() {
+        // 上传分片
+        console.log('秒传检查');
+        const fileInput = document.getElementById('filemultipleInput');
+        const parentId = document.getElementById('parentId1').value;
+        const userId = document.getElementById('userId').value;
+        localStorage.setItem('userId', userId);
+        let fastUpload = false;
+        const file = fileInput.files[0];
+        if (!file) return;
+        // 计算文件MD5值
+        await handleUpload(file);
+         // 判断是否可以秒传
+         let isFastUpload = false;
+         try {
+             const response = await $.ajax({
+                 url: '/api/file/upload/ifFastUploadFile',
+                 type: 'GET',
+                 data: {
+                     fileMd5: localStorage.getItem('fileMd5'),
+                     userId: localStorage.getItem('userId'),
+                     parentId: parentId
+                 }
+             });
+             if (response) {
+                 console.log('秒传成功，无需上传分片');
+                 return;
+             }
+         } catch (error) {
+             console.error('检查秒传失败:', error);
+         }
+
+         // 上传分片
+         console.log('开始上传分片');
+        // 分片大小：5MB
+        const chunkSize = 1024 * 1024;
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        let currentChunk = 0;
+
+        // upload分片
+        function uploadChunk() {
+            console.log(`开始上传第${currentChunk + 1}块`);
+            const start = currentChunk * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+
+            const formData = new FormData();
+            formData.append('file', chunk);
+            formData.append('parentId', parentId);
+            formData.append('fileName', file.name);
+            formData.append('totalChunks', totalChunks);
+            formData.append('chunkNumber', currentChunk);
+            formData.append('userId', localStorage.getItem('userId'));
+            // 可选：添加文件的唯一标识
+            formData.append('fileMd5', localStorage.getItem('fileMd5'));
+            localStorage.setItem( "totalChunks", totalChunks);
+            localStorage.setItem("fineName", file.name)
+
+            $.ajax({
+                url: '/api/file/chunk',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    const progress = ((currentChunk + 1) / totalChunks) * 100;
+                    updateProgress(progress);
+
+                    currentChunk++;
+                    if (currentChunk < totalChunks) {
+                        uploadChunk();
+                    } else {
+                        // 所有分片上传完成，通知服务器合并文件
+                        mergeChunks(file.name, totalChunks);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('分片上传失败:', error);
+                    // 这里可以添加重试逻辑
+                }
+            });
+        }
+        // 开始上传第一个分片
+        uploadChunk();
+    }
+
+    // 上传进度条
+    function updateProgress(progress) {
+        const progressBar = document.querySelector('.progress-bar');
+        if (progressBar) {
+            progressBar.style.width = progress + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressBar.textContent = Math.round(progress) + '%';
+        }
+    }
+
+    // 请求合并分片
+    function mergeChunks(fileName, totalChunks) {
+        const parentId = document.getElementById('parentId1').value;
+        $.ajax({
+            url: '/api/file/chunk/merge',
+            type: 'POST',
+            contentType: 'application/json',
+            data:JSON.stringify( {
+                filename: localStorage.getItem('fineName'),
+                totalChunks: localStorage.getItem('totalChunks'),
+                fileMd5: localStorage.getItem('fileMd5'),
+                userId: localStorage.getItem('userId'),
+                parentId: parentId
+            }),
+            success: function(response) {
+                console.log('文件合并成功');
+                // 可以在这里更新文件列表
+            },
+            error: function(xhr, status, error) {
+                console.error('文件合并失败:', error);
+            }
+        });
+    }
+
+    // upload
+    document.getElementById('downloadButton').addEventListener('click', function() {
+    const downloadId = document.getElementById('downloadId').value;
+    // 移除开头的 'uploads/' 如果存在
+    const filePath = downloadId.startsWith('uploads/') ? downloadId.substring(8) : downloadId;
+    window.open(`http://localhost:3000/api/file/download/${filePath}`);
+});
+</script>
+</html>

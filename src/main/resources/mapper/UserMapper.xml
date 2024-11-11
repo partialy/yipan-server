@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yixi.yipan.mapper.UserMapper">
+
+    <!-- 基础列映射 -->
+    <resultMap type="com.yixi.yipan.entity.User" id="UserMap">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="email" column="email"/>
+        <result property="storageUsed" column="storage_used"/>
+        <result property="storageLimit" column="storage_limit"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, username, password, email, storage_used, storage_limit, created_at, updated_at, status
+    </sql>
+
+    <!-- 根据ID查询用户 -->
+    <select id="queryById" resultMap="UserMap">
+        select 
+        <include refid="Base_Column_List"/>
+        from user
+        where id = #{id}
+    </select>
+
+    <!-- 根据用户名查询用户 -->
+    <select id="queryByUsername" resultType="com.yixi.yipan.dto.UserDTO">
+        select 
+        *
+        from user
+        where username = #{username}
+    </select>
+
+    <!-- 根据邮箱查询用户 -->
+    <select id="queryByEmail" resultMap="UserMap">
+        select 
+        <include refid="Base_Column_List"/>
+        from user
+        where email = #{email}
+    </select>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.yixi.yipan.entity.User">
+        insert into user
+        (id, username, password, email, storage_used, storage_limit, status)
+        values
+        (#{id}, #{username}, #{password}, #{email}, 
+         #{storageUsed}, #{storageLimit}, #{status})
+    </insert>
+
+    <!-- 更新用户信息 -->
+    <update id="update" parameterType="com.yixi.yipan.entity.User">
+        update user
+        <set>
+            <if test="username != null and username != ''">
+                username = #{username},
+            </if>
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+            <if test="email != null and email != ''">
+                email = #{email},
+            </if>
+            <if test="storageUsed != null">
+                storage_used = #{storageUsed},
+            </if>
+            <if test="storageLimit != null">
+                storage_limit = #{storageLimit},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 更新用户存储空间使用量 -->
+    <update id="updateStorageUsed">
+        update user
+        set storage_used = storage_used + #{size}
+        where id = #{id} and storage_used + #{size} &lt;= storage_limit
+    </update>
+
+    <!-- 禁用用户 -->
+    <update id="disable">
+        update user
+        set status = 1
+        where id = #{id}
+    </update>
+
+    <!-- 检查用户名是否存在 -->
+    <select id="checkUsernameExists" resultType="java.lang.Integer">
+        select count(1)
+        from user
+        where username = #{username}
+    </select>
+
+    <!-- 检查邮箱是否存在 -->
+    <select id="checkEmailExists" resultType="java.lang.Integer">
+        select count(1)
+        from user
+        where email = #{email}
+    </select>
+</mapper>

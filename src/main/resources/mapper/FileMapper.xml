@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yixi.yipan.mapper.FileMapper">
+    
+    <!-- 基础列映射 -->
+    <resultMap type="com.yixi.yipan.entity.FileInfo" id="FileMap">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="fileName" column="file_name"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="fileType" column="file_type"/>
+        <result property="filePath" column="file_path"/>
+        <result property="md5" column="md5"/>
+        <result property="isFolder" column="is_folder"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, parent_id, file_name, file_size, file_type, file_path, md5, is_folder, 
+        created_at, updated_at, deleted_at
+    </sql>
+
+    <!-- 根据ID查询 -->
+    <select id="queryById" resultMap="FileMap">
+        select 
+        <include refid="Base_Column_List" />
+        from file
+        where id = #{id} and deleted_at is null
+    </select>
+
+    <!-- 查询指定用户的文件列表 -->
+    <select id="queryByUserId" resultMap="FileMap">
+        select 
+        <include refid="Base_Column_List" />
+        from file
+        where user_id = #{userId} 
+        and deleted_at is null
+        <if test="parentId != null">
+            and parent_id = #{parentId}
+        </if>
+    </select>
+
+    <!-- 插入文件记录 -->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into file
+        (id,user_id, parent_id, file_name, file_size, file_type, file_path, md5, is_folder)
+        values
+        (#{id},#{userId}, #{parentId}, #{fileName}, #{fileSize}, #{fileType}, #{filePath}, #{md5}, #{isFolder})
+    </insert>
+
+    <!-- 更新文件信息 -->
+    <update id="update">
+        update file
+        <set>
+            <if test="fileName != null and fileName != ''">
+                file_name = #{fileName},
+            </if>
+            <if test="parentId != null">
+                parent_id = #{parentId},
+            </if>
+            <if test="fileSize != null">
+                file_size = #{fileSize},
+            </if>
+            <if test="fileType != null">
+                file_type = #{fileType},
+            </if>
+            <if test="filePath != null">
+                file_path = #{filePath},
+            </if>
+            <if test="md5 != null">
+                md5 = #{md5},
+            </if>
+            <if test="isFolder != null">
+                is_folder = #{isFolder},
+            </if>
+        </set>
+        where id = #{id} and deleted_at is Null
+    </update>
+
+    <!-- 软删除文件 -->
+    <update id="deleteById">
+        update file
+        set deleted_at = CURRENT_TIMESTAMP
+        where id = #{id} and deleted_at is Null
+    </update>
+
+    <!-- 真删除文件  -->
+    <delete id="deleteByIdReal">
+            delete from file
+            where id = #{id} and deleted_at is not Null
+    </delete>
+
+    <!-- 根据MD5查询文件 -->
+    <select id="queryByMd5" resultMap="FileMap">
+        select *
+        from file
+        where md5 = #{md5} and deleted_at is Null
+        limit 1
+    </select>
+
+   <select id="selectByMd5" resultType="com.yixi.yipan.entity.FileInfo">
+        select *
+        from file
+        where md5 = #{md5}
+    </select>
+    <select id="selectByParentId" resultType="com.yixi.yipan.dto.FileDTO" parameterType="java.lang.String">
+        select
+            *
+        from file
+        where parent_id = #{parentId} and deleted_at is Null
+    </select>
+    <select id="selectByUserIdAndParentIdIsRoot" resultType="com.yixi.yipan.dto.FileDTO"
+            parameterType="java.lang.String">
+        select
+            *
+        from file
+        where user_id = #{userId} and parent_id is null and deleted_at is Null
+    </select>
+
+    <update id="Restore">
+        UPDATE file
+        set parent_id = null,
+            deleted_at = null,
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{id}
+    </update>
+
+    <select id="queryRecycleBin" resultType="com.yixi.yipan.dto.FileDTO">
+        select
+            *
+        from file
+        where user_id = #{userId} and deleted_at is not Null
+    </select>
+    <select id="selectAllByUserId" resultType="com.yixi.yipan.dto.FileDTO" parameterType="java.lang.String">
+        select
+            *
+        from file
+        where user_id = #{userId} and deleted_at is Null
+    </select>
+    <select id="selectByMd5AndParentId" resultType="com.yixi.yipan.entity.FileInfo">
+        select *
+        from file
+        where md5 = #{md5}
+        <if test="parentId == null">
+            and parent_id is null
+        </if>
+          <if test="parentId != null">
+            and parent_id = #{parentId}
+          </if>
+
+          and deleted_at is NULL
+    </select>
+    <select id="selectByFileNameAndParentIdAndUserId" resultType="com.yixi.yipan.entity.FileInfo">
+        select *
+        from file
+        where file_name = #{fileName}
+        and user_id = #{userId}
+        and deleted_at is NULL
+        and
+        <choose>
+            <when test="parentId != null">
+                parent_id = #{parentId}
+            </when>
+            <otherwise>
+                parent_id is null
+            </otherwise>
+        </choose>
+    </select>
+</mapper>
