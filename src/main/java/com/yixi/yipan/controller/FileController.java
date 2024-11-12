@@ -63,6 +63,12 @@ public class FileController {
         return ResponseEntity.ok(fileService.selectByUserIdAndParentIdIsRoot(userId));
     }
 
+    @Operation(summary = "获取所有文件")
+    @GetMapping("/allFiles")
+    public ResponseEntity<List<FileDTO>> allFiles(@Param(value = "userId") String userId) {
+        return ResponseEntity.ok(fileService.selectAllByUserId(userId));
+    }
+
     @Operation(summary = "获取文件详情")
     @GetMapping("/{id}")
     public ResponseEntity<FileDTO> getById(@PathVariable String id) {
@@ -302,10 +308,10 @@ public class FileController {
 
     @Operation(summary = "批量移动文件")
     @PostMapping("/batch/move")
-    public ResponseEntity<String> batchMove(
+    public ResponseEntity<FileDTO> batchMove(
             @RequestBody List<String> ids,
             @RequestParam String targetFolderId) {
-        return ResponseEntity.ok(fileService.batchMoveFiles(ids, targetFolderId));
+        return ResponseEntity.ok(fileService.moveFile(ids, targetFolderId));
     }
 
     @Operation(summary = "获取下载链接")

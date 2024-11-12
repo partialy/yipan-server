@@ -190,12 +190,4 @@ public interface FileService extends IService<FileInfo> {
      * @return 提示信息
      */
     String batchCopyFiles(List<String> ids, String targetFolderId);
-
-    /**
-     * 批量移动文件
-     * @param ids 文件ID列表
-     * @param targetFolderId 目标文件夹ID
-     * @return 提示信息
-     */
-    String batchMoveFiles(List<String> ids, String targetFolderId);
 }

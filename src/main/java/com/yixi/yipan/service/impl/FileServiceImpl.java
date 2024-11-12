@@ -99,13 +99,6 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         }
     }
 
-
-    //    批量移动文件
-    @Override
-    public String batchMoveFiles(List<String> ids, String targetFolderId) {
-        return "success";
-    }
-
     // 获取文件信息
     @Override
     public FileDTO getFileById(String id) {
