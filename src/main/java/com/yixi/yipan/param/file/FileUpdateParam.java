@@ -11,7 +11,4 @@ public class FileUpdateParam {
     @Size(max = 255, message = "文件名不能超过255个字符")
     @Schema(description = "新文件名")
     private String filename;
-
-    @Schema(description = "还原文件")
-    private boolean restore;
 }

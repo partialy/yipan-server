@@ -281,12 +281,12 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         return baseMapper.selectByParentId(parentId);
     }
 
-    // 更新文件名
+    // 更新文件名,还原文件
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public FileDTO updateFile(String id, FileUpdateParam param) {
+    public FileDTO updateFile(String id, FileUpdateParam param, boolean isRestore) {
         FileInfo fileInfo = baseMapper.selectById(id);
-        if(param.isRestore()){
+        if(isRestore){
             // 恢复文件
             baseMapper.Restore(id);
             return convertToDTO(fileInfo);
@@ -462,7 +462,6 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     public List<FileDTO> recycleBin(String userId) {
         return baseMapper.queryRecycleBin(userId);
     }
-
 
     // 检查文件访问权限
     private void checkFileAccess(FileInfo fileInfo) {

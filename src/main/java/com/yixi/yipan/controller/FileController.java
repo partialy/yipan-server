@@ -265,7 +265,7 @@ public class FileController {
     public ResponseEntity<FileDTO> update(
             @PathVariable String id,
             @Valid @RequestBody FileUpdateParam param) {
-        return ResponseEntity.ok(fileService.updateFile(id, param));
+        return ResponseEntity.ok(fileService.updateFile(id, param,false));
     }
 
     @Operation(summary = "删除文件")
@@ -349,5 +349,14 @@ public class FileController {
     @GetMapping("/{userId}/recycleBin")
     public ResponseEntity<List<FileDTO>> recycleBin(@PathVariable String userId) {
         return ResponseEntity.ok(fileService.recycleBin(userId));
+    }
+
+    @Operation(summary = "还原文件")
+    @PostMapping("/restoreFiles")
+    public ResponseEntity<Boolean> restoreFiles(@RequestBody List<String> fileIds) {
+        for (String fileId : fileIds) {
+            fileService.updateFile(fileId, new FileUpdateParam(), true);
+        }
+        return ResponseEntity.ok(true);
     }
 }

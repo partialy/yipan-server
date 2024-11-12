@@ -60,4 +60,9 @@ public class FileDTO {
      * 更新时间
      */
     private Date updatedAt;
+
+    /**
+     * 删除时间
+     */
+    private Date deletedAt;
 }

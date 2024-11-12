@@ -19,9 +19,9 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 分页查询文件列表
      *
-     * @param param 查询参数
+     * @param param   查询参数
      * @param current 当前页
-     * @param size 每页大小
+     * @param size    每页大小
      * @return 分页结果
      */
     IPage<FileDTO> queryByPage(FileQueryParam param, long current, long size);
@@ -37,7 +37,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 上传文件
      *
-     * @param file 文件数据
+     * @param file     文件数据
      * @param parentId 父文件夹ID
      * @return 文件信息
      */
@@ -46,9 +46,9 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 秒传文件
      *
-     * @param fileMD5 文件数据
+     * @param fileMD5  文件数据
      * @param parentId 父文件夹ID
-     * @param userId 用户ID
+     * @param userId   用户ID
      * @return true-秒传成功，false-秒传失败
      */
     boolean ifFastUploadFile(String fileMD5, String parentId, String userId);
@@ -56,7 +56,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 上传文件分片
      *
-     * @param file 文件数据
+     * @param file  文件数据
      * @param param 分片参数
      * @return 文件信息
      */
@@ -101,14 +101,15 @@ public interface FileService extends IService<FileInfo> {
      * @return 文件列表
      */
     List<FileDTO> selectByUserIdAndParentIdIsRoot(String userId);
+
     /**
      * 更新文件信息
      *
-     * @param id 文件ID
+     * @param id    文件ID
      * @param param 更新参数
      * @return 更新后的文件信息
      */
-    FileDTO updateFile(String id, FileUpdateParam param);
+    FileDTO updateFile(String id, FileUpdateParam param, boolean isRestore);
 
     /**
      * 删除文件
@@ -127,7 +128,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 移动文件
      *
-     * @param fileId 文件ID
+     * @param fileId         文件ID
      * @param targetFolderId 目标文件夹ID
      * @return 更新后的文件信息
      */
@@ -136,7 +137,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 复制文件
      *
-     * @param id 文件ID
+     * @param id             文件ID
      * @param targetFolderId 目标文件夹ID
      * @return 更新后的文件信息
      */
@@ -153,7 +154,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 检查存储空间是否足够
      *
-     * @param userId 用户ID
+     * @param userId   用户ID
      * @param fileSize 文件大小
      * @return true-空间足够，false-空间不足
      */
@@ -162,7 +163,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 检查文件夹路径是否有效
      *
-     * @param fileId 文件ID
+     * @param fileId         文件ID
      * @param targetFolderId 目标文件夹ID
      * @return true-有效，false-无效
      */
@@ -175,6 +176,7 @@ public interface FileService extends IService<FileInfo> {
      * @return 回收站文件列表
      */
     List<FileDTO> recycleBin(String userId);
+
     /**
      * 获取所有文件列表
      *
@@ -185,9 +187,11 @@ public interface FileService extends IService<FileInfo> {
 
     /**
      * 批量复制文件
-     * @param ids 文件ID列表
+     *
+     * @param ids            文件ID列表
      * @param targetFolderId 目标文件夹ID
      * @return 提示信息
      */
     String batchCopyFiles(List<String> ids, String targetFolderId);
+
 }
