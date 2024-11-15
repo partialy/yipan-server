@@ -112,6 +112,7 @@ public class UserController {
             @Parameter(description = "用户ID", required = true)
             @PathVariable String id) {
         userService.deleteUser(id);
+        LogUtils.warn("{},用户{}删除", new Date(),id);
         return ResponseEntity.ok().build();
     }
 
