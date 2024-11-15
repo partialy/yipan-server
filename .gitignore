@@ -4,6 +4,11 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# 应用配置文件
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+!src/main/resources/application.properties.template
+
 ### STS ###
 .apt_generated
 .classpath

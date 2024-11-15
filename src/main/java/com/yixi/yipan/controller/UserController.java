@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yixi.yipan.common.result.ResultMsg;
 import com.yixi.yipan.dto.UserDTO;
+import com.yixi.yipan.entity.UserAvatar;
 import com.yixi.yipan.param.user.UserQueryParam;
 import com.yixi.yipan.param.user.UserCreateParam;
 import com.yixi.yipan.param.user.UserUpdateParam;
 import com.yixi.yipan.param.user.UserLoginParam;
+import com.yixi.yipan.service.UserAvatarService;
 import com.yixi.yipan.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,14 +31,17 @@ import com.yixi.yipan.entity.User;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
-    
+
     @Resource
     private UserService userService;
 
+    @Resource
+    private UserAvatarService userAvatarService;
+
     @Operation(summary = "分页查询用户列表", description = "支持多条件查询和排序")
     @Parameters({
-        @Parameter(name = "current", description = "当前页码", example = "1"),
-        @Parameter(name = "size", description = "每页大小", example = "10")
+            @Parameter(name = "current", description = "当前页码", example = "1"),
+            @Parameter(name = "size", description = "每页大小", example = "10")
     })
     @GetMapping
     public ResponseEntity<IPage<UserDTO>> list(
@@ -79,7 +84,7 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "请求参数错误")
     @PostMapping("/login")
     public ResponseEntity<UserDTO> login(@Valid @RequestBody UserLoginParam param) {
-            return ResponseEntity.ok(userService.login(param));
+        return ResponseEntity.ok(userService.login(param));
     }
 
     @Operation(summary = "更新用户信息", description = "支持部分字段更新")
@@ -120,5 +125,39 @@ public class UserController {
     public ResponseEntity<Void> enable(@PathVariable String id) {
         userService.enableUser(id);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "设置用户头像")
+    @ApiResponse(responseCode = "200", description = "设置成功")
+    @ApiResponse(responseCode = "404", description = "用户不存在")
+    @PutMapping("/{id}/setAvatar")
+    public ResultMsg<String> setAvatar(
+            @Parameter(description = "用户ID", required = true)
+            @PathVariable String id,
+            @Parameter(description = "头像url", required = true)
+            @RequestParam("avatarUrl") String avatarUrl) {
+        return ResultMsg.success(userAvatarService.setAvatar(id, avatarUrl));
+    }
+
+    @Operation(summary = "获取用户头像")
+    @ApiResponse(responseCode = "200", description = "获取成功")
+    @ApiResponse(responseCode = "404", description = "用户不存在")
+    @GetMapping("/{id}/getAvatar")
+    public ResultMsg<UserAvatar> getAvatar(
+            @Parameter(description = "用户ID", required = true)
+            @PathVariable String id) {
+        return ResultMsg.success(userAvatarService.getUserAvatar(id));
+    }
+
+    @Operation(summary = "更新用户头像")
+    @ApiResponse(responseCode = "200", description = "更新成功")
+    @ApiResponse(responseCode = "404", description = "用户不存在")
+    @PutMapping("/{id}/updateAvatar")
+    public ResultMsg<Boolean> updateAvatar(
+            @Parameter(description = "用户ID", required = true)
+            @PathVariable String id,
+            @Parameter(description = "头像url", required = true)
+            @RequestParam("avatarUrl") String avatarUrl) {
+        return ResultMsg.success(userAvatarService.updateAvatar(id, avatarUrl));
     }
 }
