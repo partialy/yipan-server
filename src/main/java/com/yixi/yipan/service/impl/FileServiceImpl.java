@@ -205,12 +205,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             // 父文件夹ID
             fileInfo.setParentId(param.getParentId());
             // 用户ID
-            if(Objects.equals(param.getParentId(), "")) {
-                fileInfo.setUserId(param.getUserId());
-            }else {
-                fileInfo.setUserId(baseMapper.selectById(param.getParentId()).getUserId());
-            }
-
+            fileInfo.setUserId(param.getUserId());
             // 创建时间
             fileInfo.setFileType(getFileType(param.getFileName()));
             // 时间
