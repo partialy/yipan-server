@@ -9,4 +9,6 @@ public interface UserAvatarMapper extends BaseMapper<UserAvatar> {
     void deleteByUserId(String userId);
 
     UserAvatar selectByUserId(String userId);
+
+    boolean existsByAvatarUrl(String avatarUrl);
 }

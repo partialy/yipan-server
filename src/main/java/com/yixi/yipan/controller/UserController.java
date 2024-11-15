@@ -3,6 +3,7 @@ package com.yixi.yipan.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yixi.yipan.common.result.ResultMsg;
+import com.yixi.yipan.common.utils.LogUtils;
 import com.yixi.yipan.dto.UserDTO;
 import com.yixi.yipan.entity.UserAvatar;
 import com.yixi.yipan.param.user.UserQueryParam;
@@ -21,6 +22,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.yixi.yipan.entity.User;
+
+import java.util.Date;
 
 /**
  * 用户管理接口
@@ -67,6 +70,7 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "请求参数错误")
     @PostMapping("/register")
     public ResultMsg<UserDTO> create(@Valid @RequestBody UserCreateParam param) {
+        LogUtils.info("{},用户{}注册", new Date(),param.getUsername());
         return ResultMsg.success(userService.createUser(param));
     }
 
@@ -76,6 +80,7 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "请求参数错误")
     @PutMapping("/reset-password")
     public ResultMsg<Boolean> resetPassword(@Valid @RequestBody UserUpdateParam param) {
+        LogUtils.info("{},用户{}重置密码", new Date(),param.getUsername());
         return ResultMsg.success(userService.resetPassword(param));
     }
 
@@ -84,6 +89,7 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "请求参数错误")
     @PostMapping("/login")
     public ResponseEntity<UserDTO> login(@Valid @RequestBody UserLoginParam param) {
+        LogUtils.info("{},用户{}尝试登录", new Date(),param.getUsername());
         return ResponseEntity.ok(userService.login(param));
     }
 

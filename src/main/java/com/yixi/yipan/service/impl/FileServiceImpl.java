@@ -203,6 +203,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             //md5
             fileInfo.setMd5(mergedFileMd5);
             // 父文件夹ID
+
             fileInfo.setParentId(param.getParentId());
             // 用户ID
             fileInfo.setUserId(param.getUserId());

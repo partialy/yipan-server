@@ -14,6 +14,10 @@
         FROM user_avatar
         where user_id = #{userId}
     </select>
+<!--    查询头像是否被使用 -->
+    <select id="existsByAvatarUrl" resultType="java.lang.Boolean" parameterType="java.lang.String">
+        select exists(select 1 from user_avatar where avatar_url = #{avatarUrl})
+    </select>
 
     <!-- 根据用户ID删除头像 -->
     <delete id="deleteByUserId">

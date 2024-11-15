@@ -3,9 +3,11 @@ package com.yixi.yipan.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yixi.yipan.entity.UserAvatar;
 import com.yixi.yipan.mapper.UserAvatarMapper;
+import com.yixi.yipan.service.ImageService;
 import com.yixi.yipan.service.UserAvatarService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Date;
@@ -17,6 +19,9 @@ public class UserAvatarServiceImpl extends ServiceImpl<UserAvatarMapper, UserAva
 
     @Resource
     private UserAvatarMapper avatarMapper;
+
+    @Autowired
+    private ImageService imageService;
 
     @Override
     public String setAvatar(String userId, String avatarUrl) {
@@ -38,6 +43,7 @@ public class UserAvatarServiceImpl extends ServiceImpl<UserAvatarMapper, UserAva
         userAvatar.setAvatarUrl(avatarUrl);
         userAvatar.setUpdateTime(new Date(System.currentTimeMillis()));
         avatarMapper.updateById(userAvatar);
+        imageService.deleteImage(userAvatar.getAvatarUrl());
         return true;
     }
 
@@ -47,6 +53,4 @@ public class UserAvatarServiceImpl extends ServiceImpl<UserAvatarMapper, UserAva
         System.out.println(avatarMapper.selectByUserId(userId));
         return avatarMapper.selectByUserId(userId);
     }
-
-
 }

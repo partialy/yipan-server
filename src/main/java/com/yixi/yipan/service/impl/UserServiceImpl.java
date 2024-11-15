@@ -3,6 +3,7 @@ package com.yixi.yipan.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yixi.yipan.common.utils.LogUtils;
 import com.yixi.yipan.dto.UserDTO;
 import com.yixi.yipan.entity.User;
 import com.yixi.yipan.exception.BusinessException;
@@ -116,6 +117,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!passwordEncoder.matches(param.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
+        LogUtils.info("{}用户{}登录成功", new Date(),user.getUsername());
         return userDTO;
     }
 
