@@ -1,5 +1,7 @@
 package com.yixi.yipan.service;
 
+import com.yixi.yipan.common.utils.LogUtils;
+import com.yixi.yipan.exception.BusinessException;
 import com.yixi.yipan.mapper.UserAvatarMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -133,17 +136,49 @@ public class ImageService {
                 // 如果文件超过保留天数且不是当前使用的头像，则删除
                 if (lastModified.isBefore(cutoffDate) && !isCurrentAvatar(content.getDownloadUrl())) {
                     content.delete("Delete old image: " + content.getName());
-                    log.info("删除过期图片: {}", content.getName());
+                    LogUtils.info("删除过期图片: {}", content.getName());
                 }
             }
         } catch (Exception e) {
-            log.error("清理过期图片失败", e);
+            LogUtils.error("清理过期图片失败", e);
+            throw new RuntimeException("清理失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 清理不再使用的头像
+     * @return 删除的头像数量
+     */
+    public int cleanupUnusedImages(String userId) {
+        if(userId == null) throw new BusinessException("当前用户无权限操作");
+        try {
+            GHRepository repository = gitHub.getRepository(username + "/" + repo);
+            String imagesPath = "images";
+            int deletedCount = 0;
+
+            // 获取images目录下的所有文件
+            List<GHContent> contents = repository.getDirectoryContent(imagesPath);
+
+            for (GHContent content : contents) {
+                // 如果不是当前使用的头像，则删除
+                if (!isCurrentAvatar(content.getDownloadUrl())) {
+                    content.delete("Delete unused image: " + content.getName());
+                    LogUtils.info("{},删除未使用的图片: {}", new Date(),content.getName());
+                    deletedCount++;
+                }
+            }
+            LogUtils.info("{},清理未使用图片数量: {}", new Date(),deletedCount);
+
+            return deletedCount;
+        } catch (Exception e) {
+            LogUtils.error("清理未使用图片失败", e);
             throw new RuntimeException("清理失败: " + e.getMessage());
         }
     }
 
     /**
      * 检查是否为当前在使用的头像
+     * @return true表示在使用头像，false表示非使用头像
      */
     private boolean isCurrentAvatar(String imageUrl) {
         return userAvatarMapper.existsByAvatarUrl(imageUrl);

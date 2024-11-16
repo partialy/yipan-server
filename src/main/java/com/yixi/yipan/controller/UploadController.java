@@ -26,16 +26,20 @@ public class UploadController {
     @Value("${github.username}")
     private String username;
 
-    @PostMapping("/github")
+    @PostMapping("/uploadAvatar")
     public ResultMsg<String> uploadToGithub(
             @RequestParam("userId") String userId,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("oldAvatarUrl") String oldAvatarUrl) {
         try {
+            if(oldAvatarUrl.startsWith("https://raw.githubusercontent.com/")){
+                imageService.deleteImage(oldAvatarUrl);
+            }
             String imageUrl = imageService.uploadImage(file);
             userAvatarService.setAvatar(userId, imageUrl);
             return ResultMsg.success(imageUrl);
         } catch (IllegalArgumentException e) {
-            return new ResultMsg(400, "上传失败",e.getMessage());
+            return new ResultMsg<>(400, "上传失败",e.getMessage());
         } catch (Exception e) {
             log.error("上传失败", e);
             return ResultMsg.error("上传失败");

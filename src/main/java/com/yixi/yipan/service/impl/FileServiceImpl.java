@@ -207,7 +207,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             fileInfo.setParentId(param.getParentId());
             // 用户ID
             fileInfo.setUserId(param.getUserId());
-            // 创建时间
+            // 文件类型
             fileInfo.setFileType(getFileType(param.getFileName()));
             // 时间
             fileInfo.setDeletedAt(null);

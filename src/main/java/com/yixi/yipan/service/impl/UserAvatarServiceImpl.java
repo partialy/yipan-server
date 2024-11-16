@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.UUID;
 
 @Slf4j
@@ -32,7 +32,7 @@ public class UserAvatarServiceImpl extends ServiceImpl<UserAvatarMapper, UserAva
         userAvatar.setId(UUID.randomUUID().toString());
         userAvatar.setUserId(userId);
         userAvatar.setAvatarUrl(avatarUrl);
-        userAvatar.setUpdateTime(new Date(System.currentTimeMillis()));
+        userAvatar.setUpdateTime(new Date());
         avatarMapper.insert(userAvatar);
         return avatarUrl;
     }
@@ -41,9 +41,8 @@ public class UserAvatarServiceImpl extends ServiceImpl<UserAvatarMapper, UserAva
     public boolean updateAvatar(String userId, String avatarUrl) {
         UserAvatar userAvatar = avatarMapper.selectByUserId(userId);
         userAvatar.setAvatarUrl(avatarUrl);
-        userAvatar.setUpdateTime(new Date(System.currentTimeMillis()));
+        userAvatar.setUpdateTime(new Date());
         avatarMapper.updateById(userAvatar);
-        imageService.deleteImage(userAvatar.getAvatarUrl());
         return true;
     }
 
