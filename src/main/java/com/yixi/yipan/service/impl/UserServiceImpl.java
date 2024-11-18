@@ -23,6 +23,7 @@ import org.springframework.util.StringUtils;
 import jakarta.annotation.Resource;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,25 +44,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Page<UserDTO> queryByPage(Page<User> page, UserQueryParam param) {
+        System.out.println(page);
+        System.out.println(param);
+        System.out.println("_____________________________________________________________");
         // 构建查询条件
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>()
-            .like(StringUtils.hasText(param.getUsername()), User::getUsername, param.getUsername())
-            .like(StringUtils.hasText(param.getEmail()), User::getEmail, param.getEmail())
-            .eq(param.getStatus() != null, User::getStatus, param.getStatus())
-            .ge(param.getStartTime() != null, User::getCreatedAt, param.getStartTime())
-            .le(param.getEndTime() != null, User::getCreatedAt, param.getEndTime())
-            .orderByDesc(User::getCreatedAt);
+                .like(StringUtils.hasText(param.getUsername()), User::getUsername, param.getUsername())
+                .like(StringUtils.hasText(param.getEmail()), User::getEmail, param.getEmail())
+                .eq(param.getStatus() != null, User::getStatus, param.getStatus())
+                .ge(param.getStartTime() != null, User::getCreatedAt, param.getStartTime())
+                .le(param.getEndTime() != null, User::getCreatedAt, param.getEndTime())
+                .orderByDesc(User::getCreatedAt);
+
         Page<User> userPage = baseMapper.selectPage(page, wrapper);
 
-        // 转换结果
-        Page<UserDTO> dtoPage = new Page<>(
-            userPage.getCurrent(),
-            userPage.getSize(),
-            userPage.getRecords().size()
-        );
-        dtoPage.setRecords(userPage.getRecords().stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList()));
+        // 创建新的Page对象并复制所有分页信息
+        Page<UserDTO> dtoPage = new Page<>();
+        dtoPage.setCurrent(userPage.getCurrent());
+        dtoPage.setSize(userPage.getSize());
+        dtoPage.setTotal(userPage.getTotal());
+        // 转换记录
+        List<UserDTO> dtoList = userPage.getRecords().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        dtoPage.setRecords(dtoList);
+
         return dtoPage;
     }
 

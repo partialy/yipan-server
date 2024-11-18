@@ -48,9 +48,11 @@ public class UserController {
     })
     @GetMapping
     public ResponseEntity<IPage<UserDTO>> list(
-            @Valid UserQueryParam param,
             @RequestParam(defaultValue = "1") long current,
-            @RequestParam(defaultValue = "10") long size) {
+            @RequestParam(defaultValue = "10") long size,
+            @Valid UserQueryParam param) {
+        LogUtils.info("分页参数: current={}, size={}", current, size);
+        LogUtils.info("查询参数: {}", param);
         Page<User> page = new Page<>(current, size);
         return ResponseEntity.ok(userService.queryByPage(page, param));
     }
