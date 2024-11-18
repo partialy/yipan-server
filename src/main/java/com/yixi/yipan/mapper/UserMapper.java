@@ -50,7 +50,7 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 禁用用户
      */
-    int disable(String id);
+    int updateUserStatus(String id, @Param("status") Integer status);
 
     /**
      * 检查用户名是否存在

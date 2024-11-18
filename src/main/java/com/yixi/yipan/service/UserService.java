@@ -9,6 +9,9 @@ import com.yixi.yipan.param.user.UserCreateParam;
 import com.yixi.yipan.param.user.UserLoginParam;
 import com.yixi.yipan.param.user.UserQueryParam;
 import com.yixi.yipan.param.user.UserUpdateParam;
+
+import java.util.List;
+
 /**
  * 用户服务接口
  *
@@ -19,7 +22,7 @@ public interface UserService extends IService<User> {
     /**
      * 分页查询用户列表
      *
-     * @param page 分页参数
+     * @param page  分页参数
      * @param param 查询参数
      * @return 分页结果
      */
@@ -50,17 +53,17 @@ public interface UserService extends IService<User> {
     UserDTO login(UserLoginParam param);
 
     /**
-     * 更新用户信息
+     * 重置密码
      *
      * @param param 更新参数
-     * return boolean 值，true-更新成功，false-更新失败
+     *              return boolean 值，true-更新成功，false-更新失败
      */
     boolean resetPassword(UserUpdateParam param);
 
     /**
      * 更新用户信息
      *
-     * @param id 用户ID
+     * @param id    用户ID
      * @param param 更新参数
      * @return 更新后的用户信息
      */
@@ -107,8 +110,17 @@ public interface UserService extends IService<User> {
      * 更新用户存储空间使用量
      *
      * @param userId 用户ID
-     * @param size 变化的大小（正数增加，负数减少）
+     * @param size   变化的大小（正数增加，负数减少）
      */
     void updateStorageUsed(String userId, Long size);
 
+
+    /*
+      管理员端接口
+     */
+    int deleteUsers(List<String> userIds);
+
+    boolean updateUserStatus(String userId, Integer status);
+
+    int updateUsersStatus(List<String> userIds, Integer status);
 }

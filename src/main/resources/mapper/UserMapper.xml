@@ -86,10 +86,10 @@
         where id = #{id} and storage_used + #{size} &lt;= storage_limit
     </update>
 
-    <!-- 禁用用户 -->
-    <update id="disable">
+    <!-- 禁用/启用用户 -->
+    <update id="updateUserStatus">
         update user
-        set status = 1
+        set status = ${status}
         where id = #{id}
     </update>
 

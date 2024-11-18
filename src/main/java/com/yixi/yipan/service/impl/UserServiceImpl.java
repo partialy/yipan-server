@@ -73,8 +73,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /*
-    * 获取用户信息
-    */
+     * 获取用户信息
+     */
     @Override
     public UserDTO getUserById(String id) {
         User user = this.getById(id);
@@ -90,10 +90,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UserDTO createUser(UserCreateParam param) {
-        if (checkUsernameExists(param.getUsername())){
+        if (checkUsernameExists(param.getUsername())) {
             throw new BusinessException("用户名已存在");
         }
-        if (checkEmailExists(param.getEmail())){
+        if (checkEmailExists(param.getEmail())) {
             throw new BusinessException("邮箱已存在");
         }
         User user = new User();
@@ -115,7 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserDTO login(UserLoginParam param) {
         // 根据用户名查询用户
         User user = getOne(new LambdaQueryWrapper<User>()
-            .eq(User::getUsername, param.getUsername()));
+                .eq(User::getUsername, param.getUsername()));
         UserDTO userDTO = convertToDTO(user);
         if (user == null) {
             throw new BusinessException("用户不存在");
@@ -124,7 +124,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!passwordEncoder.matches(param.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
-        LogUtils.info("{}用户{}登录成功", new Date(),user.getUsername());
+        LogUtils.info("{}用户{}登录成功", new Date(), user.getUsername());
         return userDTO;
     }
 
@@ -137,7 +137,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userinfo == null) {
             throw new BusinessException("用户不存在");
         }
-        if(userinfo.getStatus() != 0){
+        if (userinfo.getStatus() != 0) {
             throw new BusinessException("用户状态不正常");
         }
         userinfo.setPassword(passwordEncoder.encode(param.getPassword()));
@@ -198,7 +198,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public boolean checkUsernameExists(String username) {
         return count(new LambdaQueryWrapper<User>()
-            .eq(User::getUsername, username)) > 0;
+                .eq(User::getUsername, username)) > 0;
     }
 
     /**
@@ -207,7 +207,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public boolean checkEmailExists(String email) {
         return count(new LambdaQueryWrapper<User>()
-            .eq(User::getEmail, email)) > 0;
+                .eq(User::getEmail, email)) > 0;
     }
 
     /**
@@ -219,6 +219,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = this.getById(userId);
         user.setStorageUsed(user.getStorageUsed() + size);
         updateById(user);
+    }
+
+    // 管理员端接口实现
+
+    @Override
+    public int deleteUsers(List<String> userIds) {
+        return 0;
+    }
+
+    @Override
+    public boolean updateUserStatus(String userId, Integer status) {
+        try {
+            userMapper.updateUserStatus(userId, status);
+            return true;
+        } catch (Exception e) {
+            log.error("更新用户状态失败", e);
+            throw new BusinessException(e.getMessage());
+        }
+    }
+
+    @Override
+    public int updateUsersStatus(List<String> userIds, Integer status) {
+        return 0;
     }
 
     /**
