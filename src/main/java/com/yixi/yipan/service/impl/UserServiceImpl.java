@@ -225,7 +225,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public int deleteUsers(List<String> userIds) {
-        return 0;
+        try {
+            for (String userId : userIds) {
+                this.removeById(userId);
+            }
+        } catch (Exception e) {
+            log.error("删除用户失败", e);
+            throw new BusinessException(e.getMessage());
+        }
+        return userIds.size();
     }
 
     @Override
@@ -241,7 +249,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public int updateUsersStatus(List<String> userIds, Integer status) {
-        return 0;
+        for (String userId : userIds) {
+            this.updateUserStatus(userId, status);
+        }
+        return userIds.size();
     }
 
     /**
