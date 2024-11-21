@@ -106,4 +106,41 @@
         from user
         where email = #{email}
     </select>
+
+    <!-- 获取活跃用户数量 -->
+    <select id="countActiveUser" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT id)
+        FROM user
+        WHERE status = 0 AND
+        updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    </select>
+
+    <!-- 获取总存储空间使用量 -->
+    <select id="getTotalStorageUsed" resultType="java.lang.Long">
+        SELECT SUM(storage_used)
+        FROM user
+    </select>
+    <!-- 获取每日活跃用户数量 -->
+    <select id="getDailyActiveUsers" resultType="java.util.Map">
+        SELECT
+            COUNT(DISTINCT id) as count,
+            DATE_FORMAT(updated_at, '%Y-%m-%d') as login_date
+        FROM user
+        WHERE updated_at BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE_FORMAT(updated_at, '%Y-%m-%d')
+        ORDER BY login_date ASC
+    </select>
+    <!-- 获取每月活跃用户数量 -->
+    <select id="getMonthlyActiveUsers" resultType="java.util.Map">
+        SELECT
+            COUNT(DISTINCT id) as count,
+            MONTH(updated_at) as month,
+            DATE_FORMAT(updated_at, '%Y-%m') as month_date
+        FROM user
+        WHERE updated_at BETWEEN #{startDate} AND #{endDate}
+        GROUP BY
+            MONTH(updated_at),
+            DATE_FORMAT(updated_at, '%Y-%m')
+        ORDER BY month_date ASC
+    </select>
 </mapper>

@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import java.util.Map;
+
 import org.apache.ibatis.annotations.Param;
 /**
  * <p>
@@ -89,4 +91,9 @@ public interface FileMapper extends BaseMapper<FileInfo> {
      * 所有文件查询
      */
     List<FileDTO> selectAllByUserId(String userId);
+
+    /**
+     * 获取文件类型统计信息
+     */
+    List<Map<String, Object>> selectFileTypeStatistics();
 }

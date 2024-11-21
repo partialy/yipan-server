@@ -11,6 +11,7 @@ import com.yixi.yipan.param.user.UserQueryParam;
 import com.yixi.yipan.param.user.UserUpdateParam;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户服务接口
@@ -125,4 +126,8 @@ public interface UserService extends IService<User> {
     int updateUsersStatus(List<String> userIds, Integer status);
 
     UserDTO editUser(String userId, UserUpdateParam param);
+
+    long countActiveUser();
+
+    List<Integer> getUserTrend(String range);
 }

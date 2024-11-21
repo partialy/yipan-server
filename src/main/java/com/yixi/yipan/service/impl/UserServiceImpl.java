@@ -22,9 +22,8 @@ import org.springframework.util.StringUtils;
 
 import jakarta.annotation.Resource;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -265,6 +264,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return convertToDTO(user);
     }
 
+    @Override
+    public long countActiveUser() {
+        return userMapper.countActiveUser();
+    }
+
+    @Override
+    public List<Integer> getUserTrend(String range) {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate;
+        List<Map<String, Object>> activityData;
+
+        switch (range.toLowerCase()) {
+            case "week":
+                startDate = endDate.minusDays(6); // 获取最近7天
+                activityData = userMapper.getDailyActiveUsers(startDate, endDate);
+                return processDataByDay(activityData, startDate, endDate);
+
+            case "month":
+                startDate = endDate.minusDays(29); // 获取最近30天
+                activityData = userMapper.getDailyActiveUsers(startDate, endDate);
+                return this.processDataByDay(activityData, startDate, endDate);
+
+            case "year":
+                startDate = endDate.minusMonths(11); // 获取最近12个月
+                activityData = userMapper.getMonthlyActiveUsers(startDate, endDate);
+                return processDataByMonth(activityData, startDate, endDate);
+
+            default:
+                throw new IllegalArgumentException("不支持的查询范围: " + range);
+        }
+    }
+
     /**
      * 将用户实体转换为DTO
      */
@@ -293,6 +324,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user.getStatus() != 0) {
             throw new BusinessException("用户状态不正常");
         }
+    }
+
+    private List<Integer> processDataByDay(List<Map<String, Object>> activityData,
+                                           LocalDateTime startDate,
+                                           LocalDateTime endDate) {
+        Map<String, Integer> dateCountMap = activityData.stream()
+                .collect(Collectors.toMap(
+                        item -> item.get("login_date").toString(),
+                        item -> ((Number) item.get("count")).intValue()
+                ));
+
+        List<Integer> result = new ArrayList<>();
+        LocalDateTime current = startDate;
+
+        while (!current.isAfter(endDate)) {
+            String dateStr = current.toLocalDate().toString();
+            result.add(dateCountMap.getOrDefault(dateStr, 0));
+            current = current.plusDays(1);
+        }
+
+        return result;
+    }
+
+    private List<Integer> processDataByMonth(List<Map<String, Object>> activityData,
+                                             LocalDateTime startDate,
+                                             LocalDateTime endDate) {
+        Map<Integer, Integer> monthCountMap = activityData.stream()
+                .collect(Collectors.toMap(
+                        item -> ((Number) item.get("month")).intValue(),
+                        item -> ((Number) item.get("count")).intValue()
+                ));
+
+        List<Integer> result = new ArrayList<>();
+        LocalDateTime current = startDate;
+
+        while (!current.isAfter(endDate)) {
+            int month = current.getMonthValue();
+            result.add(monthCountMap.getOrDefault(month, 0));
+            current = current.plusMonths(1);
+        }
+
+        return result;
     }
 
 }

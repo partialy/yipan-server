@@ -6,6 +6,10 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
 /**
  * <p>
  * 用户表 Mapper 接口
@@ -61,5 +65,31 @@ public interface UserMapper extends BaseMapper<User> {
      * 检查邮箱是否存在
      */
     int checkEmailExists(String email);
+
+    /**
+     * 获取活跃用户数
+     */
+    int countActiveUser();
+
+    /**
+     * 获取存储总用量
+     */
+    Long getTotalStorageUsed();
+
+    /**
+     * 获取每日活跃用户数
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 返回格式 [{count: 100, login_date: "2024-03-01"}, ...]
+     */
+    List<Map<String, Object>> getDailyActiveUsers(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * 获取每月活跃用户数
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 返回格式 [{count: 3000, month: 3, month_date: "2024-03"}, ...]
+     */
+    List<Map<String, Object>> getMonthlyActiveUsers(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
 }

@@ -35,10 +35,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -63,6 +60,9 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     private String uploadPath;
 
     private static final Logger LOGGER = Logger.getLogger(FileServiceImpl.class.getName());
+
+    @Autowired
+    private FileMapper fileMapper;
 
     // 分页查询文件
     @Override
@@ -97,6 +97,12 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             log.error("batchCopyFiles error", e);
             return "error";
         }
+    }
+
+    @Override
+    public List<Map<String, Object>> getFileTypeVO() {
+        // 转换为前端所需的格式
+        return fileMapper.selectFileTypeStatistics();
     }
 
     // 获取文件信息
@@ -549,6 +555,35 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         } else {
             // 没有扩展名的情况
             fileInfo.setFileName(fileName + "_" + randomStr);
+        }
+    }
+
+    // 文件类型名称映射
+    private String getFileTypeName(String fileType) {
+        if (fileType == null) return "其他";
+
+        switch (fileType.toLowerCase()) {
+            case "image":
+            case "jpg":
+            case "jpeg":
+            case "png":
+            case "gif":
+                return "图片";
+            case "video":
+            case "mp4":
+            case "avi":
+                return "视频";
+            case "audio":
+            case "mp3":
+            case "wav":
+                return "音频";
+            case "doc":
+            case "docx":
+            case "pdf":
+            case "txt":
+                return "文档";
+            default:
+                return "其他";
         }
     }
 }

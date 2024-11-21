@@ -8,6 +8,7 @@ import com.yixi.yipan.param.file.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 文件服务接口
@@ -128,7 +129,7 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 移动文件
      *
-     * @param fileId         文件ID
+     * @param fileIds         文件ID
      * @param targetFolderId 目标文件夹ID
      * @return 更新后的文件信息
      */
@@ -194,4 +195,9 @@ public interface FileService extends IService<FileInfo> {
      */
     String batchCopyFiles(List<String> ids, String targetFolderId);
 
+    /**
+     * 获取文件类型分布
+     * @return 类型和对应数量
+     */
+    List<Map<String, Object>> getFileTypeVO();
 }

@@ -1,9 +1,13 @@
 package com.yixi.yipan.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.yixi.yipan.common.result.ResultMsg;
 import com.yixi.yipan.dto.UserDTO;
+import com.yixi.yipan.entity.FileInfo;
+import com.yixi.yipan.mapper.UserMapper;
 import com.yixi.yipan.param.user.UserCreateParam;
 import com.yixi.yipan.param.user.UserUpdateParam;
+import com.yixi.yipan.service.FileService;
 import com.yixi.yipan.service.ImageService;
 import com.yixi.yipan.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,9 +15,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -21,6 +29,15 @@ import java.util.List;
 public class AdminController {
     @Resource
     private ImageService imageService;
+
+    @Resource
+    private FileService fileService;
+
+    @Resource
+    private UserService userService;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Operation(summary = "删除不需要的用户头像")
     @ApiResponse(responseCode = "200", description = "删除成功")
@@ -31,9 +48,6 @@ public class AdminController {
     ) {
         return ResultMsg.success(imageService.cleanupUnusedImages(userId));
     }
-
-    @Resource
-    private UserService userService;
 
     @Operation(summary = "创建新用户")
     @ApiResponse(responseCode = "200", description = "创建成功")
@@ -102,7 +116,41 @@ public class AdminController {
             @PathVariable("userId") String userId,
             @Valid @RequestBody UserUpdateParam request
     ) {
-        System.out.println("-=-=-=-=-=-=-=-=-=-=-" + request+"-=-=-=-=-=-=-=-=-=-=");
         return ResultMsg.success(userService.editUser(userId, request));
+    }
+
+    @Operation(summary = "获取仪表盘数据")
+    @ApiResponse(responseCode = "200", description = "获取成功")
+    @GetMapping("/dashboard/statics")
+    public ResultMsg<Object> getDashboardData() {
+        Map<String, Object> result = new HashMap<>();
+        long userCount = userService.count();
+        long activeUserCount = userService.countActiveUser();
+        long fileCount = fileService.count(new QueryWrapper<FileInfo>()
+                .isNull("deleted_at")
+                .eq("is_folder",0));
+        long totalStorageUsed = userMapper.getTotalStorageUsed();
+        result.put("userCount", userCount);
+        result.put("activeUserCount", activeUserCount);
+        result.put("fileCount", fileCount);
+        result.put("totalStorageUsed", totalStorageUsed);
+        return new ResultMsg(200, "获取成功", result);
+    }
+
+    @Operation(summary = "获取仪表盘图表数据")
+    @ApiResponse(responseCode = "200", description = "获取成功")
+    @GetMapping("/dashboard/user-trend")
+    public ResultMsg<List<Integer>> getUserTrend(@RequestParam("range") String range) {
+        if (range == null) {
+            range = "week";
+        }
+        return new ResultMsg(200, "获取成功", userService.getUserTrend(range));
+    }
+
+    @Operation(summary = "获取仪表盘文件分布数据")
+    @ApiResponse(responseCode = "200", description = "获取成功")
+    @GetMapping("/dashboard/file-types")
+    public ResultMsg<List<Map<String, Object>>> getFileTypeVO() {
+        return new ResultMsg(200, "获取成功", fileService.getFileTypeVO());
     }
 }

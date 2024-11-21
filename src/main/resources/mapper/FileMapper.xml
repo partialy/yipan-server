@@ -170,4 +170,31 @@
             </otherwise>
         </choose>
     </select>
+    <!-- 获取文件类型统计 -->
+    <select id="selectFileTypeStatistics" resultType="java.util.Map">
+        SELECT
+            CASE
+                WHEN file_type IS NULL OR file_type = '' THEN '其他'
+                WHEN file_type IN ('jpg', 'jpeg', 'png', 'image/png', 'image/jpeg') THEN '图片'
+                WHEN file_type IN ('mp4', 'avi', 'mkv') THEN '视频'
+                WHEN file_type IN ('mp3', 'flac', 'wav') THEN '音频'
+                WHEN file_type IN ('doc', 'docx', 'pdf', 'txt') THEN '文档'
+                WHEN file_type = 'apk' THEN '应用'
+                ELSE '其他'
+                END as name,
+            COUNT(*) as value
+        FROM file
+        WHERE is_folder = 0 AND deleted_at is NULL
+        GROUP BY
+            CASE
+                WHEN file_type IS NULL OR file_type = '' THEN '其他'
+                WHEN file_type IN ('jpg', 'jpeg', 'png', 'image/png', 'image/jpeg') THEN '图片'
+                WHEN file_type IN ('mp4', 'avi', 'mkv') THEN '视频'
+                WHEN file_type IN ('mp3', 'flac', 'wav') THEN '音频'
+                WHEN file_type IN ('doc', 'docx', 'pdf', 'txt') THEN '文档'
+                WHEN file_type = 'apk' THEN '应用'
+                ELSE '其他'
+                END
+        ORDER BY value DESC
+    </select>
 </mapper>
