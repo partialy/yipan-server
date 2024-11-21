@@ -2,11 +2,14 @@ package com.yixi.yipan.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.yixi.yipan.common.result.ResultMsg;
+import com.yixi.yipan.dto.AdminDTO;
 import com.yixi.yipan.dto.UserDTO;
 import com.yixi.yipan.entity.FileInfo;
 import com.yixi.yipan.mapper.UserMapper;
 import com.yixi.yipan.param.user.UserCreateParam;
+import com.yixi.yipan.param.user.UserLoginParam;
 import com.yixi.yipan.param.user.UserUpdateParam;
+import com.yixi.yipan.service.AdminService;
 import com.yixi.yipan.service.FileService;
 import com.yixi.yipan.service.ImageService;
 import com.yixi.yipan.service.UserService;
@@ -18,7 +21,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,9 @@ public class AdminController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AdminService adminService;
 
     @Autowired
     private UserMapper userMapper;
@@ -55,6 +60,21 @@ public class AdminController {
     @PostMapping("/createUser")
     public ResultMsg<UserDTO> createUser(@Valid @RequestBody UserCreateParam request) {
         return ResultMsg.success(userService.createUser(request));
+    }
+
+    @Operation(summary = "创建新管理员")
+    @ApiResponse(responseCode = "200", description = "创建成功")
+    @ApiResponse(responseCode = "400", description = "请求参数错误")
+    @PostMapping("/createAdmin")
+    public ResultMsg<AdminDTO> createAdmin(@Valid @RequestBody Map<String, String>  request) {
+        return ResultMsg.success(adminService.addAdmin(request));
+    }
+
+    @Operation(summary = "登录")
+    @ApiResponse(responseCode = "200", description = "登录成功")
+    @PostMapping("/login")
+    public ResultMsg<AdminDTO> login(@Valid @RequestBody Map<String, String>  request) {
+        return ResultMsg.success(adminService.login(request));
     }
 
     @Operation(summary = "获取所有用户")
