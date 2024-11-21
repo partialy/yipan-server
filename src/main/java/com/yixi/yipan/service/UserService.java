@@ -123,4 +123,6 @@ public interface UserService extends IService<User> {
     boolean updateUserStatus(String userId, Integer status);
 
     int updateUsersStatus(List<String> userIds, Integer status);
+
+    UserDTO editUser(String userId, UserUpdateParam param);
 }

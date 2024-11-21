@@ -94,4 +94,15 @@ public class AdminController {
     public ResultMsg<Integer> disableUsers(@RequestParam("userIds") List<String> userIds) {
         return ResultMsg.success(userService.updateUsersStatus(userIds, 1));
     }
+
+    @Operation(summary = "编辑用户")
+    @ApiResponse(responseCode = "200", description = "编辑成功")
+    @PutMapping("/user/{userId}/edit")
+    public ResultMsg<UserDTO> editUser(
+            @PathVariable("userId") String userId,
+            @Valid @RequestBody UserUpdateParam request
+    ) {
+        System.out.println("-=-=-=-=-=-=-=-=-=-=-" + request+"-=-=-=-=-=-=-=-=-=-=");
+        return ResultMsg.success(userService.editUser(userId, request));
+    }
 }

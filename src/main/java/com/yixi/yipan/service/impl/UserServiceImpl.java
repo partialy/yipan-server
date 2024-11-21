@@ -44,9 +44,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Page<UserDTO> queryByPage(Page<User> page, UserQueryParam param) {
-        System.out.println(page);
-        System.out.println(param);
-        System.out.println("_____________________________________________________________");
         // 构建查询条件
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>()
                 .like(StringUtils.hasText(param.getUsername()), User::getUsername, param.getUsername())
@@ -253,6 +250,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             this.updateUserStatus(userId, status);
         }
         return userIds.size();
+    }
+
+    @Override
+    public UserDTO editUser(String userId, UserUpdateParam param) {
+        User user = this.getById(userId);
+        user.setUsername(param.getUsername());
+        user.setEmail(param.getEmail());
+        if (param.getStorageLimit() != 5.20) {
+            user.setStorageLimit((long) (param.getStorageLimit()*1024f*1024f*1024f));
+        }
+        user.setUpdatedAt(new Date());
+        updateById(user);
+        return convertToDTO(user);
     }
 
     /**

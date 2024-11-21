@@ -45,4 +45,10 @@ public class UserUpdateParam {
      */
     @Schema(description = "状态", example = "1")
     private Integer status;
+
+    /**
+     * 存储空间
+     */
+    @Schema(description = "存储空间", example = "1024")
+    private float storageLimit;
 }
