@@ -1,5 +1,6 @@
 package com.yixi.yipan.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,7 +14,6 @@ import com.yixi.yipan.param.file.*;
 import com.yixi.yipan.service.FileService;
 import com.yixi.yipan.common.utils.StorageUtils;
 
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -66,15 +66,42 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
 
     // 分页查询文件
     @Override
-    public IPage<FileDTO> queryByPage(FileQueryParam param, long current, long size) {
+    public IPage<FileDTO> queryByPage(long current, long size, String sortBy, String order) {
         Page<FileInfo> page = new Page<>(current, size);
+        LambdaQueryWrapper<FileInfo> wrapper = new LambdaQueryWrapper<FileInfo>()
+                .isNull(FileInfo::getDeletedAt);
+        // 添加排序条件
+        if (sortBy != null && order != null) {
+            // 根据字段名设置排序
+            switch (sortBy) {
+                case "userId":
+                    wrapper.orderBy(true, "ascending".equals(order), FileInfo::getUserId);
+                    break;
+                case "fileName":
+                    wrapper.orderBy(true, "ascending".equals(order), FileInfo::getFileName);
+                    break;
+                case "fileSize":
+                    wrapper.orderBy(true, "ascending".equals(order), FileInfo::getFileSize);
+                    break;
+                case "createdAt":
+                    wrapper.orderBy(true, "ascending".equals(order), FileInfo::getCreatedAt);
+                    break;
+                default:
+                    // 默认按创建时间倒序
+                    wrapper.orderByDesc(FileInfo::getCreatedAt);
+            }
+        } else {
+            // 没有指定排序时的默认排序
+            wrapper.orderByDesc(FileInfo::getCreatedAt);
+        }
+
         // 查询文件信息
-        Page<FileInfo> filePage = baseMapper.selectPage(page, null);
+        Page<FileInfo> filePage = baseMapper.selectPage(page, wrapper);
         // 转换为DTO
-        Page<FileDTO> dtoPage = new Page<>(filePage.getCurrent(), filePage.getSize(), filePage.getRecords().size());
+        Page<FileDTO> dtoPage = new Page<>(filePage.getCurrent(), filePage.getSize(), filePage.getTotal());
         dtoPage.setRecords(filePage.getRecords().stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList()));
+                .map(this::convertToDTO)
+                .collect(Collectors.toList()));
         return dtoPage;
     }
 

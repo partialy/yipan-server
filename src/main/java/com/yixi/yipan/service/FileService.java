@@ -20,12 +20,11 @@ public interface FileService extends IService<FileInfo> {
     /**
      * 分页查询文件列表
      *
-     * @param param   查询参数
      * @param current 当前页
      * @param size    每页大小
      * @return 分页结果
      */
-    IPage<FileDTO> queryByPage(FileQueryParam param, long current, long size);
+    IPage<FileDTO> queryByPage(long current, long size, String sortBy, String order);
 
     /**
      * 获取文件详情

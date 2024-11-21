@@ -44,10 +44,11 @@ public class FileController {
     @Operation(summary = "分页查询文件列表")
     @GetMapping
     public ResponseEntity<IPage<FileDTO>> list(
-            @Valid FileQueryParam param,
             @RequestParam(defaultValue = "1") long current,
-            @RequestParam(defaultValue = "10") long size) {
-        return ResponseEntity.ok(fileService.queryByPage(param, current, size));
+            @RequestParam(defaultValue = "10") long size,
+            @Parameter(description = "排序字段") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "排序方向(ascending/descending)") @RequestParam(required = false) String order) {
+        return ResponseEntity.ok(fileService.queryByPage(current, size, sortBy, order));
     }
 
     @Operation(summary = "获取文件列表")

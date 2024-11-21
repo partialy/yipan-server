@@ -57,6 +57,13 @@ public class AdminController {
         return ResultMsg.success(userService.createUser(request));
     }
 
+    @Operation(summary = "获取所有用户")
+    @ApiResponse(responseCode = "200", description = "获取成功")
+    @GetMapping("/getAllUsers")
+    public ResultMsg<List<UserDTO>> getAllUsers() {
+        return ResultMsg.success(userService.getAllUsers());
+    }
+
     @Operation(summary = "更新用户信息")
     @ApiResponse(responseCode = "200", description = "更新成功")
     @ApiResponse(responseCode = "404", description = "用户不存在")

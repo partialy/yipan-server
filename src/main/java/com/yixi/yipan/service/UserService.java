@@ -130,4 +130,6 @@ public interface UserService extends IService<User> {
     long countActiveUser();
 
     List<Integer> getUserTrend(String range);
+
+    List<UserDTO> getAllUsers();
 }

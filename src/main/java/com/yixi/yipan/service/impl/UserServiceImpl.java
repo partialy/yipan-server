@@ -296,6 +296,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
     }
 
+    @Override
+    public List<UserDTO> getAllUsers() {
+        List<User> users = userMapper.selectList(null);
+        return users.stream()
+               .map(this::convertToDTO)
+               .collect(Collectors.toList());
+    }
+
     /**
      * 将用户实体转换为DTO
      */
