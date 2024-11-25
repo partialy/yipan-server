@@ -120,6 +120,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!passwordEncoder.matches(param.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
+        user.setUpdatedAt(new Date());
+        updateById(user);
         LogUtils.info("{}用户{}登录成功", new Date(), user.getUsername());
         return userDTO;
     }
