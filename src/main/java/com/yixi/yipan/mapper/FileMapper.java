@@ -85,7 +85,7 @@ public interface FileMapper extends BaseMapper<FileInfo> {
     /**
      * 恢复文件
      */
-    void Restore(String id);
+    void Restore(String id, String fileName);
 
     /**
      * 所有文件查询

@@ -123,7 +123,8 @@
 
     <update id="Restore">
         UPDATE file
-        set parent_id = null,
+        set file_name = #{fileName},
+            parent_id = null,
             deleted_at = null,
             updated_at = CURRENT_TIMESTAMP
         where id = #{id}

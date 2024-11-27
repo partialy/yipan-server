@@ -51,7 +51,7 @@ public interface FileService extends IService<FileInfo> {
      * @param userId   用户ID
      * @return true-秒传成功，false-秒传失败
      */
-    boolean ifFastUploadFile(String fileMD5, String parentId, String userId);
+    boolean ifFastUploadFile(String fileName, String fileMD5, String parentId, String userId);
 
     /**
      * 上传文件分片

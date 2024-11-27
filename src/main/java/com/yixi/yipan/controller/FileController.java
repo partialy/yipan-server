@@ -16,7 +16,6 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.annotation.Resource;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.*;
 import java.net.URLEncoder;
@@ -291,11 +290,12 @@ public class FileController {
     @Operation(summary = "是否可以秒传")
     @GetMapping("/upload/ifFastUploadFile")
     public ResponseEntity<Boolean> uploadIfFastUploadFile(
+            @Param(value = "fileName") String fileName,
             @Param(value = "fileMd5") String fileMd5,
             @Param(value = "parentId") String parentId,
             @Param(value = "userId") String userId
     ) {
-        return ResponseEntity.ok(fileService.ifFastUploadFile(fileMd5, parentId, userId));
+        return ResponseEntity.ok(fileService.ifFastUploadFile(fileName, fileMd5, parentId, userId));
     }
 
     @Operation(summary = "回收站文件列表")

@@ -37,6 +37,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -117,11 +119,10 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         try {
             for (String id : ids) {
                 // 复制文件
-                FileServiceImpl.this.copyFile(id, targetFolderId);
+                copyFile(id, targetFolderId);
             }
             return "success";
         } catch (Exception e) {
-            log.error("batchCopyFiles error", e);
             return "error";
         }
     }
@@ -148,11 +149,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         // 文件名
         fileInfo.setFileName(file.getOriginalFilename());
         LOGGER.info("uploadFile fileName: {}" + fileInfo.getFileName());
-        LOGGER.info(baseMapper.selectByFileNameAndParentIdAndUserId(fileInfo.getFileName(),parentId,userId).toString());
-        if(baseMapper.selectByFileNameAndParentIdAndUserId(fileInfo.getFileName(),parentId,userId)!=null)
-        {
-            handleFileName(fileInfo);
-        }
+        handleFileName(fileInfo);
         //md5
         fileInfo.setMd5(storageUtils.getFileMd5(file));
         // id
@@ -164,7 +161,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         // 文件大小
         fileInfo.setFileSize(file.getSize());
         // 判断空间是否足够，更新用户的存储空间
-        if(!this.checkStorageSpace(userId, file.getSize())){
+        if (!this.checkStorageSpace(userId, file.getSize())) {
             throw new RuntimeException("存储空间不足");
         }
         // 创建时间
@@ -178,7 +175,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         // 路径
         fileInfo.setFilePath(storageUtils.generateFilePath(fileInfo));
         // 保存文件
-        storageUtils.saveFile(file,fileInfo);
+        storageUtils.saveFile(file, fileInfo);
         return convertToDTO(fileInfo);
     }
 
@@ -197,7 +194,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             File chunkFile = new File(chunkPath);
             file.transferTo(chunkFile);
             return true;
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("uploadChunk error", e);
             return false;
         }
@@ -206,8 +203,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     // 合并文件分片
     @Override
     public FileDTO mergeChunks(FileChunkMergeParam param) {
-        String chunkFolderPath = uploadTempPath  + param.getFileMd5();
-        String mergedFilePath = uploadPath  + param.getFileName();
+        String chunkFolderPath = uploadTempPath + param.getFileMd5();
+        String mergedFilePath = uploadPath + param.getFileName();
 
         File mergedFile = new File(mergedFilePath);
         try {
@@ -253,14 +250,14 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             // 更新用户的存储空间
             userMapper.updateStorageUsed(fileInfo.getUserId(), fileInfo.getFileSize());
             // 保存文件
-            storageUtils.saveFile(storageUtils.convertFileToMultipartFile(mergedFile),fileInfo);
+            storageUtils.saveFile(storageUtils.convertFileToMultipartFile(mergedFile), fileInfo);
             // 删除分片文件
             FileUtils.deleteDirectory(new File(chunkFolderPath));
             // 删除合并后的文件
             FileUtils.delete(mergedFile);
 
             return convertToDTO(fileInfo);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("mergeChunks error", e);
             throw new BusinessException("合并文件分片失败");
         }
@@ -270,15 +267,18 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FileDTO createFolder(FileFoldCreateParam param) {
+        if(checkNameExists(param.getFileName(), param.getParentId(), param.getUserId())) {
+            throw new BusinessException("文件夹名称已存在");
+        }
         FileInfo fileInfo = new FileInfo();
         BeanUtils.copyProperties(param, fileInfo);
         fileInfo.setFileName(param.getFileName());
         // id
         fileInfo.setId(UUID.randomUUID().toString());
         // 父文件夹ID
-        if(!storageUtils.isUUID(param.getParentId())) {
+        if (!storageUtils.isUUID(param.getParentId())) {
             fileInfo.setParentId(null);
-        }else {
+        } else {
             fileInfo.setParentId(param.getParentId());
         }
         // 用户ID
@@ -297,7 +297,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         baseMapper.insert(fileInfo);
         return convertToDTO(fileInfo);
     }
-   // 查询文件夹下的所有文件
+
+    // 查询文件夹下的所有文件
     @Override
     public List<FileDTO> queryByParentId(String parentId) {
         return baseMapper.selectByParentId(parentId);
@@ -308,12 +309,15 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     @Transactional(rollbackFor = Exception.class)
     public FileDTO updateFile(String id, FileUpdateParam param, boolean isRestore) {
         FileInfo fileInfo = baseMapper.selectById(id);
-        if(isRestore){
+        if (isRestore) {
             // 恢复文件
-            baseMapper.Restore(id);
+            fileInfo.setParentId(null);
+            handleFileName(fileInfo);
+            baseMapper.Restore(id, fileInfo.getFileName());
             return convertToDTO(fileInfo);
         }
         fileInfo.setFileName(param.getFilename());
+        handleFileName(fileInfo);
         fileInfo.setUpdatedAt(new Date());
         baseMapper.updateById(fileInfo);
         return convertToDTO(fileInfo);
@@ -331,13 +335,13 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     public void deleteFile(String id) {
         FileInfo fileInfo = baseMapper.selectById(id);
         Long fileSize = fileInfo.getFileSize();
-        if(fileInfo.getIsFolder() == 1){
+        if (fileInfo.getIsFolder() == 1) {
             fileInfo.setFileSize(0L);
             baseMapper.updateById(fileInfo);
         }
-        if(fileInfo.getDeletedAt() != null){
+        if (fileInfo.getDeletedAt() != null) {
             String filePath = fileInfo.getFilePath();
-            if(baseMapper.selectByMd5(fileInfo.getMd5()).size() == 1){
+            if (baseMapper.selectByMd5(fileInfo.getMd5()).size() == 1) {
                 // 物理删除
                 storageUtils.deleteFileInHarDisk(filePath);
             }
@@ -386,14 +390,15 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     public String copyFile(String id, String targetFolderId) {
         // 查询文件信息
         FileInfo fileInfo = baseMapper.selectById(id);
-        if(targetFolderId.isEmpty()) {
+        if (targetFolderId.isEmpty()) {
             //复制到根目录
             fileInfo.setParentId(null);
+            handleFileName(fileInfo);
             this.modifyFileInfo(fileInfo, targetFolderId);
             return baseMapper.selectById(fileInfo.getParentId()).getFileName();
         }
-        if(storageUtils.isUUID(targetFolderId)) {
-            if(targetFolderId.equals(fileInfo.getParentId())){
+        if (storageUtils.isUUID(targetFolderId)) {
+            if (targetFolderId.equals(fileInfo.getParentId())) {
 //                复制到同一目录
                 fileInfo.setParentId(null);
                 handleFileName(fileInfo);
@@ -402,6 +407,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
             }
 //            复制到其他目录
             fileInfo.setParentId(targetFolderId);
+            handleFileName(fileInfo);
             this.modifyFileInfo(fileInfo, targetFolderId);
             return baseMapper.selectById(fileInfo.getParentId()).getFileName();
         }
@@ -420,7 +426,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     public boolean checkStorageSpace(String userId, Long fileSize) {
         Long totalSpace = userMapper.selectById(userId).getStorageLimit();
         Long usedSpace = userMapper.selectById(userId).getStorageUsed();
-        if(usedSpace + fileSize <= totalSpace){
+        if (usedSpace + fileSize <= totalSpace) {
             // 更新用户的存储空间
             userMapper.updateStorageUsed(userId, fileSize);
             return true;
@@ -436,25 +442,27 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     }
 
     @Override
-    public boolean ifFastUploadFile(String fileMD5, String parentId,String userId){
+    public boolean ifFastUploadFile(String fileName,String fileMD5, String parentId, String userId) {
         FileInfo fileInfo = baseMapper.queryByMd5(fileMD5);
         User userInfo = userMapper.selectById(userId);
-        if(fileInfo != null){
+        if (fileInfo != null) {
             // 文件已存在
             // 更新文件信息，生成新的uuid，准备插入数据库
             fileInfo.setId(UUID.randomUUID().toString());
             fileInfo.setUpdatedAt(new Date());
             fileInfo.setUserId(userId);
+            fileInfo.setFileName(fileName);
 
-            if(storageUtils.isUUID(parentId)){
-                if(fileInfo.getParentId()==null){
+            if (storageUtils.isUUID(parentId)) {
+                if (fileInfo.getParentId() == null) {
                     fileInfo.setParentId(parentId);
+                    handleFileName(fileInfo);
                     baseMapper.insert(fileInfo);
                     userInfo.setStorageUsed(userInfo.getStorageUsed() + fileInfo.getFileSize());
                     userMapper.updateById(userInfo);
                     return true;
                 }
-                if(fileInfo.getParentId().equals(parentId)){
+                if (fileInfo.getParentId().equals(parentId)) {
                     // 同一文件夹下存在相同文件，更新文件信息
                     handleFileName(fileInfo);
                     baseMapper.insert(fileInfo);
@@ -463,6 +471,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
                     return true;
                 }
                 fileInfo.setParentId(null);
+                handleFileName(fileInfo);
                 userInfo.setStorageUsed(userInfo.getStorageUsed() + fileInfo.getFileSize());
                 userMapper.updateById(userInfo);
                 baseMapper.insert(fileInfo);
@@ -491,9 +500,10 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     }
 
     // 检查文件名是否重复
-    private boolean checkNameExists(String filename, String parentId) {
-        // TODO: 实现文件名重复检查逻辑
-        return false;
+    private boolean checkNameExists(String fileName, String parentId, String userId) {
+        System.out.println("-----------------------文件名处理-----------"+fileName);
+        List<FileInfo> fileInfos = baseMapper.selectByFileNameAndParentIdAndUserId(fileName, parentId, userId);
+        return !fileInfos.isEmpty();
     }
 
     // 转换为DTO
@@ -536,20 +546,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     }
 
     public void modifyFileInfo(FileInfo fileInfo, String targetFolderId) {
-        List<FileInfo> exisitFile = baseMapper.selectByMd5AndParentId(fileInfo.getMd5(),targetFolderId);
-        if(exisitFile.size() > 1 ){
-            for (FileInfo file : exisitFile) {
-                if (file.getFileName().equals(fileInfo.getFileName())) {
-                    handleFileName(fileInfo);
-                }
-            }
-        }else{
-            if(exisitFile.size() == 1) {
-                if (exisitFile.get(0).getFileName().equals(fileInfo.getFileName())) {
-                    handleFileName(fileInfo);
-                }
-            }
-        }
+        handleFileName(fileInfo);
         userMapper.updateStorageUsed(fileInfo.getUserId(), fileInfo.getFileSize());
         fileInfo.setParentId(targetFolderId);
         fileInfo.setId(UUID.randomUUID().toString());
@@ -558,52 +555,37 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         baseMapper.insert(fileInfo);
     }
 
-    public void handleFileName(FileInfo fileInfo){
+    public void handleFileName(FileInfo fileInfo) {
         String fileName = fileInfo.getFileName();
+        if (!checkNameExists(fileName, fileInfo.getParentId(), fileInfo.getUserId())) {
+            // 文件名不重复，无需处理
+            return;
+        }
+        // 解析文件名组成部分
+        int lastDotIndex = fileName.lastIndexOf(".");
+        String nameWithoutExt = lastDotIndex != -1 ? fileName.substring(0, lastDotIndex) : fileName;
+        String extension = lastDotIndex != -1 ? fileName.substring(lastDotIndex) : "";
+
+        // 检查是否已有随机标识符（格式为 _XXXX，其中X为大写字母或数字）
+        Pattern pattern = Pattern.compile("^(.+)_([A-F0-9]{4})$");
+        Matcher matcher = pattern.matcher(nameWithoutExt);
+
+        String baseName;
+        if (matcher.matches()) {
+            // 如果已有随机标识符，只替换标识符部分
+            baseName = matcher.group(1);
+        } else {
+            // 如果没有随机标识符，使用完整的名称（不含扩展名）
+            baseName = nameWithoutExt;
+        }
+
+        // 生成新的随机标识符
         String randomStr = UUID.randomUUID().toString()
                 .replaceAll("-", "")
-                .substring(0, 3)
+                .substring(0, 4)
                 .toUpperCase();
 
-        // 处理文件名
-        int lastDotIndex = fileName.lastIndexOf(".");
-        if (lastDotIndex != -1) {
-            // 有扩展名的情况
-            String nameWithoutExt = fileName.substring(0, lastDotIndex);
-            String extension = fileName.substring(lastDotIndex);
-            fileInfo.setFileName(nameWithoutExt + "_" + randomStr + extension);
-        } else {
-            // 没有扩展名的情况
-            fileInfo.setFileName(fileName + "_" + randomStr);
-        }
-    }
-
-    // 文件类型名称映射
-    private String getFileTypeName(String fileType) {
-        if (fileType == null) return "其他";
-
-        switch (fileType.toLowerCase()) {
-            case "image":
-            case "jpg":
-            case "jpeg":
-            case "png":
-            case "gif":
-                return "图片";
-            case "video":
-            case "mp4":
-            case "avi":
-                return "视频";
-            case "audio":
-            case "mp3":
-            case "wav":
-                return "音频";
-            case "doc":
-            case "docx":
-            case "pdf":
-            case "txt":
-                return "文档";
-            default:
-                return "其他";
-        }
+        // 组合新文件名
+        fileInfo.setFileName(baseName + "_" + randomStr + extension);
     }
 }
