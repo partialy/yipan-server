@@ -86,25 +86,7 @@ public class StorageUtils {
         if (fileId == null || fileId.isEmpty()) {
             return null;
         }
-        return domain + "/api/v1/files/download/" + fileId;
-    }
-
-    /**
-     * 下载文件
-     *
-     * @param filePath 文件路径
-     * @return 文件字节数组
-     */
-    public byte[] downloadFile(String filePath) {
-        // 下载文件
-        System.out.println("收到下载请求：路径：" + filePath);
-        Path path = Path.of(filePath);
-        try {
-            return Files.readAllBytes(path);
-        } catch (IOException e) {
-            log.error("下载文件失败:{}", filePath, e);
-            return null;
-        }
+        return domain + "/api/file/download/" + fileId;
     }
 
     /**

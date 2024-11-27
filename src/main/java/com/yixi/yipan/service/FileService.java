@@ -71,14 +71,6 @@ public interface FileService extends IService<FileInfo> {
     FileDTO mergeChunks(FileChunkMergeParam param);
 
     /**
-     * 下载文件
-     *
-     * @param filePath 文件路径
-     * @return 文件数据
-     */
-    byte[] downloadFile(String filePath);
-
-    /**
      * 创建文件夹
      *
      * @param param 创建参数

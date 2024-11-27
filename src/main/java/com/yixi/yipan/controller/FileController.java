@@ -2,29 +2,25 @@ package com.yixi.yipan.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.yixi.yipan.dto.FileDTO;
-import com.yixi.yipan.entity.FileInfo;
 import com.yixi.yipan.param.file.*;
 import com.yixi.yipan.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.ibatis.annotations.Param;
-import org.springframework.core.io.AbstractResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.annotation.Resource;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -83,30 +79,6 @@ public class FileController {
         return ResponseEntity.ok(fileService.uploadFile(file, parentId, userId));
     }
 
-//    @Operation(summary = "下载文件")
-//    @CrossOrigin(origins = "*", allowedHeaders = "*", exposedHeaders = "*")
-//    @GetMapping("/download/{id}")
-//    public ResponseEntity<byte[]> download(@Parameter(description = "文件ID") @PathVariable String id) {
-//
-//        FileDTO fileDTO = fileService.getFileById(id);
-//        String filePath = fileDTO.getFilePath();
-//
-//         byte[] fileData = fileService.downloadFile(filePath);
-//         log.debug("controller download file data: " + Arrays.toString(fileData));
-//         if (fileData == null) {
-//             return ResponseEntity.notFound().build();
-//         }
-//         HttpHeaders headers = new HttpHeaders();
-//         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-//         headers.setContentDisposition(ContentDisposition.attachment()
-//                 .filename(FilenameUtils.getName(filePath))
-//                 .build());
-//
-//         return ResponseEntity.ok()
-//                 .headers(headers)
-//                 .body(fileData);
-//    }
-
     @Operation(summary = "下载文件")
     @CrossOrigin(
             originPatterns = "*",
@@ -115,145 +87,71 @@ public class FileController {
             allowCredentials = "true"
     )
     @GetMapping("/download/{id}")
-    public ResponseEntity<?> download(
-            @Parameter(description = "文件ID") @PathVariable String id,
-            @RequestHeader(value = "Range", required = false) String rangeHeader) {
+    public void download(@PathVariable String id, HttpServletResponse response) throws IOException {
+        FileDTO fileDTO = fileService.getFileById(id);
+        File file = new File(fileDTO.getFilePath());
 
-        try {
-            FileDTO fileDTO = fileService.getFileById(id);
-            String filePath = fileDTO.getFilePath();
-            File file = new File(filePath);
+        // 设置文件下载的响应头
+        String fileName = fileDTO.getFileName();
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setContentLengthLong(file.length());
 
-            if (!file.exists()) {
-                log.warn("File not found: {}", filePath);
-                return ResponseEntity.notFound().build();
+        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file));
+             BufferedOutputStream outputStream = new BufferedOutputStream(response.getOutputStream())) {
+
+            byte[] buffer = new byte[8192]; // 8KB缓冲区
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
             }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.ACCEPT_RANGES, "bytes");
-
-            // 根据文件扩展名设置正确的 Content-Type
-            String contentType = Files.probeContentType(file.toPath());
-            headers.setContentType(contentType != null ?
-                    MediaType.parseMediaType(contentType) :
-                    MediaType.APPLICATION_OCTET_STREAM);
-
-            // 处理文件名编码
-            String fileName = FilenameUtils.getName(filePath);
-            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
-                    .replaceAll("\\+", "%20");
-            headers.add(HttpHeaders.CONTENT_DISPOSITION,
-                    "inline; filename*=UTF-8''" + encodedFileName);
-
-            final long fileSize = file.length();
-
-            // 处理 Range 请求
-            if (rangeHeader != null) {
-                try {
-                    String[] ranges = rangeHeader.replace("bytes=", "").split("-");
-                    final long start = Long.parseLong(ranges[0]);
-                    final long end = ranges.length > 1 ?
-                            Math.min(Long.parseLong(ranges[1]), fileSize - 1) :
-                            fileSize - 1;
-
-                    // 验证范围
-                    if (start >= fileSize || start > end) {
-                        return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-                                .header(HttpHeaders.CONTENT_RANGE, "bytes */" + fileSize)
-                                .build();
-                    }
-
-                    final long contentLength = end - start + 1;
-                    headers.add(HttpHeaders.CONTENT_RANGE,
-                            String.format("bytes %d-%d/%d", start, end, fileSize));
-                    headers.setContentLength(contentLength);
-
-                    return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
-                            .headers(headers)
-                            .body(new RangeResource(file, start, contentLength));
-
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid range format: {}", rangeHeader);
-                }
+        } catch (IOException e) {
+            if (!e.getMessage().contains("管道已断开") &&
+                    !e.getMessage().contains("连接被对端重置")) {
+                log.error("文件传输错误: {}", fileName, e);
+                throw new RuntimeException("文件下载失败", e);
             }
-
-            // 非 Range 请求或范围无效时返回完整文件
-            headers.setContentLength(fileSize);
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(new FileSystemResource(file));
-
-        } catch (Exception e) {
-            log.error("Error processing file download request for id: {}", id, e);
-            return ResponseEntity.internalServerError().build();
         }
     }
 
-    /**
-     * 处理范围请求的资源实现
-     */
-    private static class RangeResource extends AbstractResource {
-        private final File file;
-        private final long start;
-        private final long length;
-
-        public RangeResource(File file, long start, long length) {
-            this.file = file;
-            this.start = start;
-            this.length = length;
+    @Operation(summary = "预览文件")
+    @GetMapping("/preview/{id}")
+    public void preview(@PathVariable String id, HttpServletResponse response) throws IOException {
+        FileDTO fileDTO = fileService.getFileById(id);
+        File file = new File(fileDTO.getFilePath());
+        // 设置文件预览的响应头
+        String contentType = Files.probeContentType(file.toPath());
+        // 如果无法识别文件类型，默认使用二进制流
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
         }
+        response.setContentType(contentType);
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(file.length()));
 
-        @Override
-        public String getDescription() {
-            return String.format("Range of file %s from %d with length %d",
-                    file.getName(), start, length);
-        }
+        // 支持范围请求（断点续传）
+        response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes");
 
-        @Override
-        public InputStream getInputStream() throws IOException {
-            RandomAccessFile raf = new RandomAccessFile(file, "r");
-            raf.seek(start);
+        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file));
+             BufferedOutputStream outputStream = new BufferedOutputStream(response.getOutputStream())) {
 
-            return new BufferedInputStream(new FileInputStream(raf.getFD()) {
-                private long bytesRead = 0;
-
-                @Override
-                public int read(byte[] b, int off, int len) throws IOException {
-                    if (bytesRead >= length) {
-                        return -1;
-                    }
-
-                    long remaining = length - bytesRead;
-                    int readLen = (int) Math.min(len, remaining);
-                    int read = super.read(b, off, readLen);
-
-                    if (read > 0) {
-                        bytesRead += read;
-                    }
-                    return read;
-                }
-
-                @Override
-                public void close() throws IOException {
-                    try {
-                        super.close();
-                    } finally {
-                        raf.close();
-                    }
-                }
-            });
-        }
-
-        @Override
-        public boolean exists() {
-            return true;
-        }
-
-        @Override
-        public long contentLength() {
-            return length;
+            byte[] buffer = new byte[8192]; // 8KB缓冲区
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+                outputStream.flush();
+            }
+        } catch (IOException e) {
+            if (!e.getMessage().contains("管道已断开") &&
+                    !e.getMessage().contains("连接被对端重置")) {
+                log.error("文件预览错误: {}", fileDTO.getFileName(), e);
+                throw new RuntimeException("文件预览失败", e);
+            }
         }
     }
+
+
 
     @Operation(summary = "创建文件夹")
     @PostMapping("/createFolder")
@@ -316,7 +214,7 @@ public class FileController {
     }
 
     @Operation(summary = "获取下载链接")
-    @GetMapping("/{id}/download")
+    @GetMapping("/{id}/getDownloadUrl")
     public ResponseEntity<String> getDownloadUrl(@PathVariable String id) {
         return ResponseEntity.ok(fileService.getDownloadUrl(id));
     }

@@ -266,13 +266,6 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         }
     }
 
-    // 下载文件
-    @Override
-    public byte[] downloadFile(String filePath) {
-        System.out.println("serviceimpl"+filePath);
-        return storageUtils.downloadFile(filePath);
-    }
-
     // 创建文件夹
     @Override
     @Transactional(rollbackFor = Exception.class)
