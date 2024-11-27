@@ -7,6 +7,7 @@ import com.yixi.yipan.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/file")
 public class FileController {
-    
+
     @Resource
     private FileService fileService;
 
@@ -118,39 +119,92 @@ public class FileController {
 
     @Operation(summary = "预览文件")
     @GetMapping("/preview/{id}")
-    public void preview(@PathVariable String id, HttpServletResponse response) throws IOException {
+    public void preview(@PathVariable String id, HttpServletRequest request, HttpServletResponse response) throws IOException {
         FileDTO fileDTO = fileService.getFileById(id);
         File file = new File(fileDTO.getFilePath());
-        // 设置文件预览的响应头
+
+        // 设置文件类型
         String contentType = Files.probeContentType(file.toPath());
-        // 如果无法识别文件类型，默认使用二进制流
         if (contentType == null) {
             contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
         }
         response.setContentType(contentType);
-        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(file.length()));
 
-        // 支持范围请求（断点续传）
+        // 支持范围请求
         response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes");
 
-        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file));
-             BufferedOutputStream outputStream = new BufferedOutputStream(response.getOutputStream())) {
+        long fileLength = file.length();
+        long startPos = 0;
+        long endPos = fileLength - 1;
 
-            byte[] buffer = new byte[8192]; // 8KB缓冲区
+        // 处理 Range 请求头
+        String rangeHeader = request.getHeader(HttpHeaders.RANGE);
+        if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+            try {
+                // 解析 Range 头，格式如 "bytes=0-1024" 或 "bytes=1024-"
+                String[] ranges = rangeHeader.substring("bytes=".length()).split("-");
+                startPos = Long.parseLong(ranges[0]);
+
+                if (ranges.length > 1 && !ranges[1].isEmpty()) {
+                    endPos = Long.parseLong(ranges[1]);
+                }
+
+                if (startPos >= fileLength) {
+                    // 请求范围超出文件大小
+                    response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                    response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes */" + fileLength);
+                    return;
+                }
+
+                // 确保 endPos 不超过文件大小
+                endPos = Math.min(endPos, fileLength - 1);
+
+                // 设置 206 Partial Content 状态
+                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                response.setHeader(HttpHeaders.CONTENT_RANGE,
+                        String.format("bytes %d-%d/%d", startPos, endPos, fileLength));
+
+            } catch (NumberFormatException e) {
+                // Range 格式错误，返回整个文件
+                startPos = 0;
+                endPos = fileLength - 1;
+            }
+        }
+
+        // 计算需要传输的长度
+        long contentLength = endPos - startPos + 1;
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength));
+
+        // 使用 RandomAccessFile 支持范围读取
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+            randomAccessFile.seek(startPos);
+
+            byte[] buffer = new byte[8192];
+            long remaining = contentLength;
             int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-                outputStream.flush();
+
+            try (BufferedOutputStream outputStream = new BufferedOutputStream(response.getOutputStream())) {
+                while (remaining > 0 && (bytesRead = randomAccessFile.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                    remaining -= bytesRead;
+
+                    // 定期刷新输出流
+                    if (remaining % (buffer.length * 8) == 0) {
+                        outputStream.flush();
+                    }
+                }
             }
         } catch (IOException e) {
-            if (!e.getMessage().contains("管道已断开") &&
+            // 忽略客户端断开连接的常见异常
+            if (!e.getMessage().contains("Broken pipe") &&
+                    !e.getMessage().contains("Connection reset") &&
+                    !e.getMessage().contains("管道已断开") &&
                     !e.getMessage().contains("连接被对端重置")) {
                 log.error("文件预览错误: {}", fileDTO.getFileName(), e);
                 throw new RuntimeException("文件预览失败", e);
             }
         }
     }
-
 
 
     @Operation(summary = "创建文件夹")
@@ -164,7 +218,7 @@ public class FileController {
     public ResponseEntity<FileDTO> update(
             @PathVariable String id,
             @Valid @RequestBody FileUpdateParam param) {
-        return ResponseEntity.ok(fileService.updateFile(id, param,false));
+        return ResponseEntity.ok(fileService.updateFile(id, param, false));
     }
 
     @Operation(summary = "删除文件")
@@ -240,7 +294,7 @@ public class FileController {
             @Param(value = "fileMd5") String fileMd5,
             @Param(value = "parentId") String parentId,
             @Param(value = "userId") String userId
-    ){
+    ) {
         return ResponseEntity.ok(fileService.ifFastUploadFile(fileMd5, parentId, userId));
     }
 
