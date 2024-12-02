@@ -60,16 +60,9 @@ public interface ShareService extends IService<Share> {
     /**
      * 取消分享
      *
-     * @param id 分享ID
+     * @param shareCodeList 分享ID
      */
-    void cancelShare(String id);
-
-    /**
-     * 批量取消分享
-     *
-     * @param ids 分享ID列表
-     */
-    void batchCancelShares(List<String> ids);
+    void cancelShareByCode(List<String> shareCodeList);
 
     /**
      * 增加下载次数

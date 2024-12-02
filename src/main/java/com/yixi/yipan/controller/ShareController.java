@@ -79,32 +79,18 @@ public class ShareController {
     /**
      * 取消分享
      *
-     * @param id 分享ID
+     * @param shareCodeList 分享ID
      * @return 操作结果
      */
     @Operation(summary = "取消分享")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/cancel")
     public ResponseEntity<Void> cancel(
             @Parameter(description = "分享ID", required = true)
-            @PathVariable String id) {
-        shareService.cancelShare(id);
+            @RequestBody List<String> shareCodeList) {
+        shareService.cancelShareByCode(shareCodeList);
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 批量取消分享
-     *
-     * @param ids 分享ID列表
-     * @return 操作结果
-     */
-    @Operation(summary = "批量取消分享")
-    @DeleteMapping("/batch")
-    public ResponseEntity<Void> batchCancel(
-            @Parameter(description = "分享ID列表", required = true)
-            @RequestBody List<String> ids) {
-        shareService.batchCancelShares(ids);
-        return ResponseEntity.ok().build();
-    }
     /**
      * 获取分享文件列表
      * @return 分享文件列表

@@ -114,14 +114,8 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void cancelShare(String id) {
-        // TODO: 实现取消分享逻辑
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void batchCancelShares(List<String> ids) {
-        // TODO: 实现批量取消分享逻辑
+    public void cancelShareByCode(List<String> shareCodeList) {
+        shareMapper.deleteByShareCode(shareCodeList);
     }
 
     @Override

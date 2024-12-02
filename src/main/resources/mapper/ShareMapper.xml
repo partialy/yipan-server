@@ -28,6 +28,13 @@
         values
         (#{id}, #{userId}, #{fileId}, #{shareCode}, #{expireTime}, #{downloadCount}, #{status}, #{link}, #{accessCode})
     </insert>
+    <delete id="deleteByShareCode" parameterType="java.lang.String">
+        delete from share
+        where share_code in
+        <foreach collection="list" item="shareCode" open="(" separator="," close=")">
+            #{shareCode}
+        </foreach>
+    </delete>
 
     <!-- 根据ID查询分享 -->
     <select id="queryById" resultMap="ShareMap">

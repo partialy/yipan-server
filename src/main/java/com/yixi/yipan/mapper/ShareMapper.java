@@ -57,15 +57,6 @@ public interface ShareMapper extends BaseMapper<Share> {
     int incrementDownloadCount(String id);
 
     /**
-     * 取消分享
-     *
-     * @param id 分享ID
-     * @param userId 用户ID
-     * @return 影响行数
-     */
-    int cancelShare(@Param("id") String id, @Param("userId") String userId);
-
-    /**
      * 删除过期的分享记录
      *
      * @return 影响行数
@@ -90,4 +81,6 @@ public interface ShareMapper extends BaseMapper<Share> {
     List<String> queryShareCodeByUserId(String userId);
 
     List<Share> queryByShareCodeList(List<String> shareCodeList);
+
+    void deleteByShareCode(List<String> shareCodeList);
 }
