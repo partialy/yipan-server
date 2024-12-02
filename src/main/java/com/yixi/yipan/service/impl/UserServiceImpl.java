@@ -15,6 +15,7 @@ import com.yixi.yipan.service.UserService;
 import com.yixi.yipan.param.user.UserLoginParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private UserMapper userMapper;
+    @Autowired
+    private UserAvatarServiceImpl userAvatarServiceImpl;
 
     @Override
     public Page<UserDTO> queryByPage(Page<User> page, UserQueryParam param) {
@@ -100,6 +103,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setStorageLimit(5585058816L);
         user.setCreatedAt(new Date());
         user.setStatus(0);
+        userAvatarServiceImpl.setAvatar(user.getId(), "https://cdn.jsdelivr.net/gh/partialy/images/images/user1.png");
         save(user);
         return convertToDTO(user);
     }
@@ -111,8 +115,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserDTO login(UserLoginParam param) {
         // 根据用户名查询用户
         User user = getOne(new LambdaQueryWrapper<User>()
-                .eq(User::getUsername, param.getUsername()));
-        UserDTO userDTO = convertToDTO(user);
+                .and(wrapper -> wrapper
+                        .eq(User::getUsername, param.getUsername())
+                        .or()
+                        .eq(User::getEmail, param.getUsername())));
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
@@ -123,7 +129,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUpdatedAt(new Date());
         updateById(user);
         LogUtils.info("{}用户{}登录成功", new Date(), user.getUsername());
-        return userDTO;
+        return convertToDTO(user);
     }
 
     /**

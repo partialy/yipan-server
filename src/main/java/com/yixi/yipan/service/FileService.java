@@ -191,4 +191,9 @@ public interface FileService extends IService<FileInfo> {
      * @return 类型和对应数量
      */
     List<Map<String, Object>> getFileTypeVO();
+
+    /**
+     * 获取多个文件
+     */
+    List<FileDTO> getFilesByIds(List<String> ids);
 }

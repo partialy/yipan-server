@@ -1,7 +1,11 @@
 package com.yixi.yipan.dto;
 
 import java.util.Date;
+import java.util.List;
+
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 文件分享信息传输对象
@@ -9,6 +13,8 @@ import lombok.Data;
  * @author yixi
  * @since 2024-10-31
  */
+@Getter
+@Setter
 @Data
 public class ShareDTO {
     /**
@@ -17,20 +23,23 @@ public class ShareDTO {
     private String id;
 
     /**
-     * 分享用户ID
+     * 分享用户id
      */
     private String userId;
 
     /**
-     * 被分享的文件ID
+     * 分享用户名
      */
-    private Long fileId;
+    private String userName;
 
     /**
      * 分享码，用于访问分享内容
      */
     private String shareCode;
-
+    /**
+     * 访问码，用于访问分享内容
+     */
+    private String accessCode;
     /**
      * 分享链接过期时间
      */
@@ -54,10 +63,10 @@ public class ShareDTO {
     /**
      * 分享的文件信息
      */
-    private FileDTO file;
+    private List<FileDTO> fileDTOList;
 
     /**
-     * 分享用户信息
+     * 链接
      */
-    private UserDTO user;
+    private String link;
 }

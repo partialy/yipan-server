@@ -2,7 +2,9 @@ package com.yixi.yipan.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yixi.yipan.dto.FileDTO;
 import com.yixi.yipan.dto.ShareDTO;
+import com.yixi.yipan.dto.UserDTO;
 import com.yixi.yipan.param.share.ShareCreateParam;
 import com.yixi.yipan.param.share.ShareQueryParam;
 import com.yixi.yipan.service.ShareService;
@@ -49,27 +51,13 @@ public class ShareController {
     }
 
     /**
-     * 获取分享详情
-     *
-     * @param id 分享ID
-     * @return 分享详情
-     */
-    @Operation(summary = "获取分享详情")
-    @GetMapping("/{id}")
-    public ResponseEntity<ShareDTO> getById(
-            @Parameter(description = "分享ID", required = true)
-            @PathVariable String id) {
-        return ResponseEntity.ok(shareService.getShareById(id));
-    }
-
-    /**
      * 通过分享码获取分享信息
      *
      * @param shareCode 分享码
      * @return 分享信息
      */
     @Operation(summary = "通过分享码获取分享信息")
-    @GetMapping("/code/{shareCode}")
+    @GetMapping("/{shareCode}")
     public ResponseEntity<ShareDTO> getByCode(
             @Parameter(description = "分享码", required = true)
             @PathVariable String shareCode) {
@@ -83,9 +71,9 @@ public class ShareController {
      * @return 创建的分享信息
      */
     @Operation(summary = "创建分享")
-    @PostMapping
-    public ResponseEntity<ShareDTO> create(@Valid @RequestBody ShareCreateParam param) {
-        return ResponseEntity.ok(shareService.createShare(param.getUserId(),param.getFileId(), param.getExpireTime()));
+    @PostMapping("/create")
+    public ResponseEntity<List<ShareDTO>> create(@Valid @RequestBody ShareCreateParam param) {
+        return ResponseEntity.ok(shareService.createShare(param));
     }
 
     /**
@@ -116,6 +104,18 @@ public class ShareController {
             @RequestBody List<String> ids) {
         shareService.batchCancelShares(ids);
         return ResponseEntity.ok().build();
+    }
+    /**
+     * 获取分享文件列表
+     * @return 分享文件列表
+     */
+    @Operation(summary = "获取分享文件列表")
+    @GetMapping("/{userId}/getShareFiles")
+    public ResponseEntity<List<ShareDTO>> getShareFiles(
+            @Parameter(description = "用户ID", required = true)
+            @PathVariable String userId
+    ){
+        return ResponseEntity.ok(shareService.getShareFiles(userId));
     }
 
     /**

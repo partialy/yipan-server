@@ -9,6 +9,7 @@ import com.yixi.yipan.entity.FileInfo;
 import com.yixi.yipan.entity.User;
 import com.yixi.yipan.exception.BusinessException;
 import com.yixi.yipan.mapper.FileMapper;
+import com.yixi.yipan.mapper.ShareMapper;
 import com.yixi.yipan.mapper.UserMapper;
 import com.yixi.yipan.param.file.*;
 import com.yixi.yipan.service.FileService;
@@ -65,6 +66,8 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
 
     @Autowired
     private FileMapper fileMapper;
+    @Autowired
+    private ShareMapper shareMapper;
 
     // 分页查询文件
     @Override
@@ -131,6 +134,11 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     public List<Map<String, Object>> getFileTypeVO() {
         // 转换为前端所需的格式
         return fileMapper.selectFileTypeStatistics();
+    }
+
+    @Override
+    public List<FileDTO> getFilesByIds(List<String> ids) {
+        return shareMapper.getFilesByIds(ids);
     }
 
     // 获取文件信息

@@ -9,15 +9,21 @@ import com.yixi.yipan.dto.ShareDTO;
 import com.yixi.yipan.dto.UserDTO;
 import com.yixi.yipan.entity.Share;
 import com.yixi.yipan.mapper.ShareMapper;
+import com.yixi.yipan.param.share.ShareCreateParam;
 import com.yixi.yipan.service.FileService;
 import com.yixi.yipan.service.ShareService;
 import com.yixi.yipan.service.UserService;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Resource;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -31,31 +37,53 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements ShareService {
+    
+    @Value("${server.frontDomain}")
+    private String domain;
 
     @Resource
     private FileService fileService;
 
     @Resource
     private UserService userService;
+    @Autowired
+    private ShareMapper shareMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ShareDTO createShare(String userId, String fileId, Date expireTime) {
+    public List<ShareDTO> createShare(ShareCreateParam param) {
+        String shareCode = generateShareCode(12);
+        List<ShareDTO> shareDTOList = new ArrayList<>();
         // 创建分享
-        Share share = new Share();
-        share.setUserId(userId);
-        share.setFileId(fileId);
-        share.setExpireTime(expireTime);
-        // 分享码
-        share.setShareCode(generateShareCode());
-        // 下载次数
-        share.setDownloadCount(0);
-        // 创建时间
-        share.setCreatedAt(new Date());
-        // 状态
-        share.setStatus(1);
-        baseMapper.insert(share);
-        return convertToDTO(share, null, null);
+        for (String fileId : param.getFileIds()) {
+            Share share = new Share();
+            share.setUserId(param.getUserId());
+            share.setExpireTime(param.getExpireTime());
+            share.setFileId(fileId);
+            // 分享码
+            if (param.getIsNeedCode()==1) {
+                if (param.getAccessCode() == null) {
+                    share.setAccessCode(generateShareCode(4));
+                } else {
+                    share.setAccessCode(param.getAccessCode());
+                }
+            } else {
+                share.setAccessCode(null);
+            }
+            share.setShareCode(shareCode);
+            // 下载次数
+            share.setDownloadCount(0);
+            // 创建时间
+            share.setCreatedAt(new Date());
+            // 状态
+            share.setStatus(0);
+            // 生成分享链接
+            share.setLink(domain + "/share/" + share.getShareCode());
+            baseMapper.insert(share);
+            shareDTOList.add(convertToDTO(share,  null));
+        }
+        // 转换为DTO
+        return shareDTOList;
     }
 
     @Override
@@ -66,38 +94,23 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
 
     @Override
     public ShareDTO getShareByCode(String shareCode) {
-        // TODO: 实现通过分享码获取分享信息逻辑
-        return null;
+        // 查询分享信息
+        List<Share> share = baseMapper.queryByShareCode(shareCode);
+        List<FileDTO> fileDTOList = fileService.getFilesByIds(share.stream().map(Share::getFileId).toList());
+        // 转换为DTO
+        return convertToDTO(share.get(0), fileDTOList);
     }
 
     @Override
     public IPage<ShareDTO> queryUserShares(String userId, Page<Share> page) {
-        // 查询分享信息
-        Page<Share> sharePage = new Page<>(page.getCurrent(), page.getSize());
-
-        LambdaQueryWrapper<Share> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Share::getUserId, userId);
-        // 查询分享信息
-        sharePage = baseMapper.selectPage(sharePage, wrapper);
-        // 转换为DTO
-        Page<ShareDTO> dtoPage = new Page<>(sharePage.getCurrent(), sharePage.getSize(), sharePage.getRecords().size());
-        dtoPage.setRecords(sharePage.getRecords().stream()
-            .map(share -> convertToDTO(share, fileService.getFileById(share.getFileId()), userService.getUserById(share.getUserId())))
-            .collect(Collectors.toList()));
-        return dtoPage;
+        return null;
     }
 
     @Override
     public IPage<ShareDTO> queryAllShares(Page<Share> page) {
-        // 查询分享信息
-        Page<Share> sharePage = baseMapper.selectPage(page, null);
-        // 转换为DTO
-        Page<ShareDTO> dtoPage = new Page<>(sharePage.getCurrent(), sharePage.getSize(), sharePage.getRecords().size());
-        dtoPage.setRecords(sharePage.getRecords().stream()
-            .map(share -> convertToDTO(share, fileService.getFileById(share.getFileId()), userService.getUserById(share.getUserId())))
-                .collect(Collectors.toList()));
-        return dtoPage;
+        return null;
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -129,24 +142,34 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         // TODO: 实现清理过期分享逻辑
     }
 
+    @Override
+    public List<ShareDTO> getShareFiles(String userId) {
+        List<String> codeList = shareMapper.queryShareCodeByUserId(userId);
+        List<ShareDTO> shareDTOList = new ArrayList<>();
+        for (String code : codeList) {
+            shareDTOList.add(this.getShareByCode(code));
+        }
+        return shareDTOList;
+    }
+
     /**
      * 生成分享码
      */
-    private String generateShareCode() {
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    private String generateShareCode(int length) {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, length);
     }
 
     /**
      * 转换为DTO
      */
-    private ShareDTO convertToDTO(Share share, FileDTO file, UserDTO user) {
+    private ShareDTO convertToDTO(Share share, List<FileDTO> fileDTOList) {
         if (share == null) {
             return null;
         }
         ShareDTO dto = new ShareDTO();
         BeanUtils.copyProperties(share, dto);
-        dto.setFile(file);
-        dto.setUser(user);
+        dto.setUserName(userService.getUserById(share.getUserId()).getUsername());
+        dto.setFileDTOList(fileDTOList);
         return dto;
     }
 

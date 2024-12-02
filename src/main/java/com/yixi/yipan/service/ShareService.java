@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.yixi.yipan.dto.ShareDTO;
 import com.yixi.yipan.entity.Share;
+import com.yixi.yipan.param.share.ShareCreateParam;
 
 import java.util.Date;
 import java.util.List;
@@ -19,11 +20,10 @@ public interface ShareService extends IService<Share> {
     /**
      * 创建分享
      *
-     * @param fileId 文件ID
-     * @param expireTime 过期时间（可选）
+     * @param shareCreateParam 分享创建参数
      * @return 分享信息
      */
-    ShareDTO createShare(String userId, String fileId, Date expireTime);
+    List<ShareDTO> createShare(ShareCreateParam shareCreateParam);
 
     /**
      * 获取分享详情
@@ -32,7 +32,6 @@ public interface ShareService extends IService<Share> {
      * @return 分享详情
      */
     ShareDTO getShareById(String id);
-
     /**
      * 通过分享码获取分享信息
      *
@@ -91,4 +90,9 @@ public interface ShareService extends IService<Share> {
      * 清理过期分享
      */
     void cleanExpiredShares();
+
+    /**
+     * 获取分享列表
+     */
+    List<ShareDTO> getShareFiles(String userId);
 }

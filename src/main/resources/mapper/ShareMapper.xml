@@ -12,6 +12,8 @@
         <result property="downloadCount" column="download_count"/>
         <result property="createdAt" column="created_at"/>
         <result property="status" column="status"/>
+        <result property="accessCode" column="access_code"/>
+        <result property="link" column="link"/>
     </resultMap>
 
     <!-- 通用查询列 -->
@@ -22,9 +24,9 @@
     <!-- 创建分享 -->
     <insert id="insert" parameterType="com.yixi.yipan.entity.Share">
         insert into share
-        (id, user_id, file_id, share_code, expire_time, download_count, status)
+        (id, user_id, file_id, share_code, expire_time, download_count, status, link, access_code)
         values
-        (#{id}, #{userId}, #{fileId}, #{shareCode}, #{expireTime}, #{downloadCount}, #{status})
+        (#{id}, #{userId}, #{fileId}, #{shareCode}, #{expireTime}, #{downloadCount}, #{status}, #{link}, #{accessCode})
     </insert>
 
     <!-- 根据ID查询分享 -->
@@ -32,15 +34,16 @@
         select 
         <include refid="Base_Column_List"/>
         from share
-        where id = #{id} and status = 1 and expire_time > CURRENT_TIMESTAMP
+        where id = #{id} and status = 0 and expire_time > CURRENT_TIMESTAMP
     </select>
 
     <!-- 根据分享码查询分享 -->
-    <select id="queryByShareCode" resultMap="ShareMap">
+    <select id="queryByShareCode" resultType="com.yixi.yipan.entity.Share">
         select 
-        <include refid="Base_Column_List"/>
+        *
         from share
-        where share_code = #{shareCode} and status = 1 and expire_time > CURRENT_TIMESTAMP
+        where share_code = #{shareCode} and status = 0 and expire_time > CURRENT_TIMESTAMP
+        order by created_at desc
     </select>
 
     <!-- 查询用户的分享列表 -->
@@ -48,7 +51,7 @@
         select 
         <include refid="Base_Column_List"/>
         from share
-        where user_id = #{userId} and status = 1
+        where user_id = #{userId} and status = 0
         order by created_at desc
     </select>
 
@@ -56,21 +59,21 @@
     <update id="incrementDownloadCount">
         update share
         set download_count = download_count + 1
-        where id = #{id} and status = 1
+        where id = #{id} and status = 0
     </update>
 
     <!-- 取消分享 -->
     <update id="cancelShare">
         update share
-        set status = 0
+        set status = 1
         where id = #{id} and user_id = #{userId}
     </update>
 
     <!-- 删除过期的分享 -->
     <update id="deleteExpiredShares">
         update share
-        set status = 0
-        where expire_time &lt;= CURRENT_TIMESTAMP and status = 1
+        set status = 1
+        where expire_time &lt;= CURRENT_TIMESTAMP and status = 0
     </update>
 
     <!-- 检查分享是否有效 -->
@@ -78,8 +81,29 @@
         select count(1)
         from share
         where id = #{id} 
-        and status = 1 
+        and status = 0
         and expire_time &gt; CURRENT_TIMESTAMP
+    </select>
+
+    <!--获取多个文件-->
+    <select id="getFilesByIds" resultType="com.yixi.yipan.dto.FileDTO">
+        select * from file
+        where id in
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <select id="queryShareCodeByUserId" resultType="java.lang.String" parameterType="java.lang.String">
+        select DISTINCT share_code from share
+        where user_id = #{userId}
+    </select>
+    <select id="queryByShareCodeList" resultType="com.yixi.yipan.entity.Share"
+            parameterType="java.util.List">
+        select * from share
+        where share_code in
+        <foreach collection="list" item="shareCode" open="(" separator="," close=")">
+            #{shareCode}
+        </foreach>
     </select>
 
 </mapper>

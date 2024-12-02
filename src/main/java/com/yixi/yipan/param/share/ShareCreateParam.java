@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Schema(description = "分享创建参数")
@@ -16,17 +17,15 @@ public class ShareCreateParam {
 
     @NotNull(message = "文件ID不能为空")
     @Schema(description = "文件ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String fileId;
-    
-    @Schema(description = "分享密码")
-    private String password;
-    
+    private List<String> fileIds;
+
+    @NotNull(message = "是否需要分享码不能为空")
+    @Schema(description = "是否需要提取码", requiredMode = Schema.RequiredMode.REQUIRED)
+    private int isNeedCode;
+
+    @Schema(description = "提取码")
+    private String accessCode;
+
     @Schema(description = "过期时间")
     private Date expireTime;
-    
-    @Schema(description = "最大下载次数")
-    private Integer maxDownloads;
-    
-    @Schema(description = "分享说明")
-    private String description;
 }

@@ -1,6 +1,7 @@
 package com.yixi.yipan.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.yixi.yipan.dto.FileDTO;
 import com.yixi.yipan.entity.Share;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -37,7 +38,7 @@ public interface ShareMapper extends BaseMapper<Share> {
      * @param shareCode 分享码
      * @return 分享信息
      */
-    Share queryByShareCode(String shareCode);
+    List<Share> queryByShareCode(String shareCode);
 
     /**
      * 查询用户的分享列表
@@ -78,4 +79,15 @@ public interface ShareMapper extends BaseMapper<Share> {
      * @return 有效的分享数量
      */
     int checkShareValid(String id);
+
+    /**
+     * 获取多个文件
+     * @param ids 文件ID列表
+     * @return 文件列表
+     */
+    List<FileDTO> getFilesByIds(List<String> ids);
+
+    List<String> queryShareCodeByUserId(String userId);
+
+    List<Share> queryByShareCodeList(List<String> shareCodeList);
 }
