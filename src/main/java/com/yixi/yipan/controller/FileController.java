@@ -1,6 +1,7 @@
 package com.yixi.yipan.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.yixi.yipan.common.utils.StorageUtils;
 import com.yixi.yipan.dto.FileDTO;
 import com.yixi.yipan.param.file.*;
 import com.yixi.yipan.service.FileService;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +38,8 @@ public class FileController {
 
     @Resource
     private FileService fileService;
+    @Autowired
+    private StorageUtils storageUtils;
 
     @Operation(summary = "分页查询文件列表")
     @GetMapping
@@ -247,7 +251,8 @@ public class FileController {
     public ResponseEntity<String> copyFile(
             @PathVariable String id,
             @RequestParam String targetFolderId) {
-        return ResponseEntity.ok(fileService.copyFile(id, targetFolderId));
+        if(!storageUtils.isUUID(targetFolderId)){targetFolderId=null;}
+        return ResponseEntity.ok(fileService.copyFile(id, targetFolderId,null));
     }
 
     @Operation(summary = "批量复制文件")
@@ -255,7 +260,7 @@ public class FileController {
     public ResponseEntity<String> batchCopy(
             @RequestBody List<String> ids,
             @RequestParam String targetFolderId) {
-        return ResponseEntity.ok(fileService.batchCopyFiles(ids, targetFolderId));
+        return ResponseEntity.ok(fileService.batchCopyFiles(ids, targetFolderId,null));
     }
 
     @Operation(summary = "批量移动文件")

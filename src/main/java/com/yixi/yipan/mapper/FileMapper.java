@@ -30,6 +30,7 @@ public interface FileMapper extends BaseMapper<FileInfo> {
     */
     List<FileInfo> selectByFileNameAndParentIdAndUserId(String fileName, String parentId, String userId);
 
+    List<FileInfo> selectByFileNameAndUserId(String fileName, String userId);
     /**
      * 查询指定用户的文件列表
      */
@@ -71,6 +72,7 @@ public interface FileMapper extends BaseMapper<FileInfo> {
      */
     List<FileDTO> selectByParentId(String folderId);
 
+    List<FileInfo> queryByParentId(String parentId);
     /**
      * 根据用户ID和父目录ID查询文件列表
      */

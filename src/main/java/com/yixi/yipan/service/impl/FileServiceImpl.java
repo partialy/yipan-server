@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.yixi.yipan.common.utils.LogUtils;
 import com.yixi.yipan.dto.FileDTO;
 import com.yixi.yipan.entity.FileInfo;
 import com.yixi.yipan.entity.User;
@@ -118,11 +119,11 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
 
     //    批量复制文件
     @Override
-    public String batchCopyFiles(List<String> ids, String targetFolderId) {
+    public String batchCopyFiles(List<String> ids, String targetFolderId, String userId) {
         try {
             for (String id : ids) {
                 // 复制文件
-                copyFile(id, targetFolderId);
+                copyFile(id, targetFolderId, userId);
             }
             return "success";
         } catch (Exception e) {
@@ -275,7 +276,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FileDTO createFolder(FileFoldCreateParam param) {
-        if(checkNameExists(param.getFileName(), param.getParentId(), param.getUserId())) {
+        if (checkNameExists(param.getFileName(), param.getParentId(), param.getUserId())) {
             throw new BusinessException("文件夹名称已存在");
         }
         FileInfo fileInfo = new FileInfo();
@@ -395,9 +396,18 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     // 复制文件
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String copyFile(String id, String targetFolderId) {
+    public String copyFile(String id, String targetFolderId, String userId) {
         // 查询文件信息
         FileInfo fileInfo = baseMapper.selectById(id);
+        if (fileInfo.getIsFolder() == 1) {
+            return copyFolder(fileInfo, targetFolderId, userId);
+        }
+        if (userId != null) {
+            fileInfo.setUserId(userId);
+            handleFileName(fileInfo);
+            this.modifyFileInfo(fileInfo, targetFolderId);
+            return null;
+        }
         if (targetFolderId.isEmpty()) {
             //复制到根目录
             fileInfo.setParentId(null);
@@ -407,13 +417,13 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         }
         if (storageUtils.isUUID(targetFolderId)) {
             if (targetFolderId.equals(fileInfo.getParentId())) {
-//                复制到同一目录
+                // 复制到同一目录
                 fileInfo.setParentId(null);
                 handleFileName(fileInfo);
                 this.modifyFileInfo(fileInfo, targetFolderId);
                 return baseMapper.selectById(fileInfo.getParentId()).getFileName();
             }
-//            复制到其他目录
+            // 复制到其他目录
             fileInfo.setParentId(targetFolderId);
             handleFileName(fileInfo);
             this.modifyFileInfo(fileInfo, targetFolderId);
@@ -450,7 +460,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     }
 
     @Override
-    public boolean ifFastUploadFile(String fileName,String fileMD5, String parentId, String userId) {
+    public boolean ifFastUploadFile(String fileName, String fileMD5, String parentId, String userId) {
         FileInfo fileInfo = baseMapper.queryByMd5(fileMD5);
         User userInfo = userMapper.selectById(userId);
         if (fileInfo != null) {
@@ -502,15 +512,12 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         return baseMapper.queryRecycleBin(userId);
     }
 
-    // 检查文件访问权限
-    private void checkFileAccess(FileInfo fileInfo) {
-        // TODO: 实现文件访问权限检查逻辑
-    }
-
     // 检查文件名是否重复
     private boolean checkNameExists(String fileName, String parentId, String userId) {
-        System.out.println("-----------------------文件名处理-----------"+fileName);
         List<FileInfo> fileInfos = baseMapper.selectByFileNameAndParentIdAndUserId(fileName, parentId, userId);
+        if (parentId==null || parentId.isEmpty()) {
+            fileInfos = baseMapper.selectByFileNameAndUserId(fileName, userId);
+        }
         return !fileInfos.isEmpty();
     }
 
@@ -561,6 +568,31 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
         fileInfo.setCreatedAt(new Date());
         fileInfo.setUpdatedAt(new Date());
         baseMapper.insert(fileInfo);
+    }
+
+    private String copyFolder(FileInfo folderInfo, String targetFolderId, String userId) {
+        // 创建新文件夹
+        FileInfo newFolder = new FileInfo();
+        BeanUtils.copyProperties(folderInfo, newFolder);
+        newFolder.setId(UUID.randomUUID().toString());
+        newFolder.setParentId(targetFolderId);
+        newFolder.setCreatedAt(new Date());
+        newFolder.setUpdatedAt(new Date());
+
+        if (userId != null) {
+            newFolder.setUserId(userId);
+        }
+
+        handleFileName(newFolder);
+        baseMapper.insert(newFolder);
+
+        // 复制文件夹内的所有内容
+        List<FileInfo> children = fileMapper.queryByParentId(folderInfo.getId());
+        for (FileInfo child : children) {
+            copyFile(child.getId(), newFolder.getId(), userId);
+        }
+
+        return newFolder.getFileName();
     }
 
     public void handleFileName(FileInfo fileInfo) {

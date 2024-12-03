@@ -133,7 +133,7 @@ public interface FileService extends IService<FileInfo> {
      * @param targetFolderId 目标文件夹ID
      * @return 更新后的文件信息
      */
-    String copyFile(String id, String targetFolderId);
+    String copyFile(String id, String targetFolderId, String userId);
 
     /**
      * 获取文件下载链接
@@ -184,7 +184,7 @@ public interface FileService extends IService<FileInfo> {
      * @param targetFolderId 目标文件夹ID
      * @return 提示信息
      */
-    String batchCopyFiles(List<String> ids, String targetFolderId);
+    String batchCopyFiles(List<String> ids, String targetFolderId, String userId);
 
     /**
      * 获取文件类型分布

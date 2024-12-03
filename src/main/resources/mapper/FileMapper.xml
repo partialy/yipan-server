@@ -198,4 +198,15 @@
                 END
         ORDER BY value DESC
     </select>
+    <select id="queryByParentId" resultType="com.yixi.yipan.entity.FileInfo" parameterType="java.lang.String">
+        select * from file
+        where parent_id = #{parentId} and deleted_at is Null
+    </select>
+    <select id="selectByFileNameAndUserId" resultType="com.yixi.yipan.entity.FileInfo">
+        select *
+        from file
+        where file_name = #{fileName}
+        and user_id = #{userId}
+        and deleted_at is Null
+    </select>
 </mapper>

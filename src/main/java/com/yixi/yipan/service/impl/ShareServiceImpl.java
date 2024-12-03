@@ -146,6 +146,11 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
         return shareDTOList;
     }
 
+    @Override
+    public void saveShareFiles(String userId, List<String> fileIds) {
+        fileService.batchCopyFiles(fileIds, "",userId);
+    }
+
     /**
      * 生成分享码
      */

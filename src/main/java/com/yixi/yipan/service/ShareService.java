@@ -88,4 +88,10 @@ public interface ShareService extends IService<Share> {
      * 获取分享列表
      */
     List<ShareDTO> getShareFiles(String userId);
+    /**
+     * 保存分享文件
+     * @param userId 目标用户ID
+     * @param fileIds 文件ID列表
+     */
+    void saveShareFiles(String userId, List<String> fileIds);
 }

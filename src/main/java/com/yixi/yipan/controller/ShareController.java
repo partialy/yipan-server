@@ -104,6 +104,19 @@ public class ShareController {
         return ResponseEntity.ok(shareService.getShareFiles(userId));
     }
 
+//    保存分享文件到自己的网盘
+    @Operation(summary = "保存分享文件到自己的网盘")
+    @PostMapping("/{userId}/saveShareFiles")
+    public ResponseEntity<Void> saveShareFiles(
+            @Parameter(description = "用户ID", required = true)
+            @PathVariable String userId,
+            @Parameter(description = "文件id列表", required = true)
+            @RequestBody List<String> fileIds
+    ){
+        shareService.saveShareFiles(userId, fileIds);
+        return ResponseEntity.ok().build();
+    }
+
     /**
      * 增加下载次数
      *
