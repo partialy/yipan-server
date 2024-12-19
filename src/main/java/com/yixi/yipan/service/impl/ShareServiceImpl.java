@@ -1,19 +1,16 @@
 package com.yixi.yipan.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.yixi.yipan.dto.FileDTO;
 import com.yixi.yipan.dto.ShareDTO;
-import com.yixi.yipan.dto.UserDTO;
 import com.yixi.yipan.entity.Share;
 import com.yixi.yipan.mapper.ShareMapper;
 import com.yixi.yipan.param.share.ShareCreateParam;
 import com.yixi.yipan.service.FileService;
 import com.yixi.yipan.service.ShareService;
 import com.yixi.yipan.service.UserService;
-import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * 文件分享服务实现类

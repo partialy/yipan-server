@@ -77,7 +77,7 @@ public class ImageService {
     private String generateUniqueFileName(MultipartFile file) {
         String originalFilename = file.getOriginalFilename();
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        return UUID.randomUUID().toString() + extension;
+        return UUID.randomUUID() + extension;
     }
 
     /**

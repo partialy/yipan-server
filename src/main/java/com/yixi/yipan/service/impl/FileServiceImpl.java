@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.yixi.yipan.common.utils.LogUtils;
 import com.yixi.yipan.dto.FileDTO;
 import com.yixi.yipan.entity.FileInfo;
 import com.yixi.yipan.entity.User;
@@ -19,6 +18,7 @@ import com.yixi.yipan.common.utils.StorageUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -64,6 +64,9 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     private String uploadPath;
 
     private static final Logger LOGGER = Logger.getLogger(FileServiceImpl.class.getName());
+
+    @Autowired
+    private ObjectProvider<FileService> fileServiceProvider;
 
     @Autowired
     private FileMapper fileMapper;
@@ -120,10 +123,11 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
     //    批量复制文件
     @Override
     public String batchCopyFiles(List<String> ids, String targetFolderId, String userId) {
+        FileService fileService = fileServiceProvider.getObject();
         try {
             for (String id : ids) {
                 // 复制文件
-                copyFile(id, targetFolderId, userId);
+                fileService.copyFile(id, targetFolderId, userId);
             }
             return "success";
         } catch (Exception e) {
@@ -588,8 +592,9 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, FileInfo> implement
 
         // 复制文件夹内的所有内容
         List<FileInfo> children = fileMapper.queryByParentId(folderInfo.getId());
+        FileService fileService = fileServiceProvider.getObject();
         for (FileInfo child : children) {
-            copyFile(child.getId(), newFolder.getId(), userId);
+            fileService.copyFile(child.getId(), newFolder.getId(), userId);
         }
 
         return newFolder.getFileName();

@@ -69,13 +69,6 @@
         where id = #{id} and status = 0
     </update>
 
-    <!-- 取消分享 -->
-    <update id="cancelShare">
-        update share
-        set status = 1
-        where id = #{id} and user_id = #{userId}
-    </update>
-
     <!-- 删除过期的分享 -->
     <update id="deleteExpiredShares">
         update share

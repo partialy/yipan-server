@@ -1,7 +1,7 @@
 package com.yixi.yipan.exception;
 
 public class BusinessException extends RuntimeException {
-    private String code;
+    private final String code;
     
     public BusinessException(String message) {
         super(message);

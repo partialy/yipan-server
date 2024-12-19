@@ -18,5 +18,5 @@ public class UserAvatar {
     @TableField("avatar_url")
     private String avatarUrl;
 
-    private Date updateTime;;
+    private Date updateTime;
 }
