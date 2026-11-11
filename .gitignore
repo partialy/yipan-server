@@ -36,3 +36,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local secrets and environment credentials (keep tracked examples)
+.env
+.env.*
+!.env.example
+!.env.*.example
+**/credentials.json
+**/secrets.json
+*.pem
+*.p12
+*.pfx
+*.key
